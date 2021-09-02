@@ -44,7 +44,14 @@ struct CPU {
     Registers regs;
     Flags flags;
 
-    u16 sp;
+    union {
+        u16 sp;
+        struct {
+            u8 sp_low;
+            u8 sp_hi;
+        };
+    };
+
     union {
         u16 pc;
         struct {
