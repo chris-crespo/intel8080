@@ -5,7 +5,7 @@ sdl = `sdl2-config --cflags --libs`
 
 all: clean dirs build
 
-build: dirs build/emulator
+build: build/emulator
 	build/emulator roms/invaders
 
 clean:
