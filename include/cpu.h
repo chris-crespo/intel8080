@@ -1,6 +1,8 @@
 #ifndef CPU_H
 #define CPU_H
 
+#include "types.h"
+
 struct Registers {
     union {
         u16 bc;
