@@ -6,7 +6,7 @@ sdl = `sdl2-config --cflags --libs`
 all: clean dirs build
 
 build: dirs build/emulator
-	build/emulator space_invaders
+	build/emulator roms/invaders
 
 clean:
 	rm -rf obj/ build/
@@ -14,11 +14,14 @@ clean:
 dirs:
 	mkdir obj/ build/
 
-build/emulator: obj/main.o obj/screen.o
+build/emulator: obj/main.o obj/screen.o obj/memory.o
 	gcc $(flags) -o $@ obj/*.o $(sdl)
 
-obj/main.o: src/main.c include/screen.h
+obj/main.o: src/main.c include/memory.h include/screen.h
 	gcc $(flags) -c src/main.c -o $@ $(sdl)
+
+obj/memory.o: src/memory.c include/memory.h
+	gcc $(flags) -c src/memory.c -o $@ $(sdl)
 
 obj/screen.o: src/screen.c include/screen.h
 	gcc $(flags) -c src/screen.c -o $@ $(sdl)

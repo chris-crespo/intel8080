@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <SDL.h>
 
+#include "memory.h"
 #include "screen.h"
 
 #define USAGE "Usage: ./build/emulator [rom].\n"
@@ -16,6 +17,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    load_rom(argv[1]);
     screen_init();
 
     while (1) {
