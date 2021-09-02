@@ -48,4 +48,6 @@ struct CPU {
 
 };
 
+void cpu_tick(void);
+
 #endif

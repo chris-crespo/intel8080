@@ -14,11 +14,14 @@ clean:
 dirs:
 	mkdir obj/ build/
 
-build/emulator: obj/main.o obj/screen.o obj/memory.o
+build/emulator: obj/main.o obj/cpu.o obj/screen.o obj/memory.o
 	gcc $(flags) -o $@ obj/*.o $(sdl)
 
-obj/main.o: src/main.c include/memory.h include/screen.h
+obj/main.o: src/main.c include/cpu.h include/memory.h include/screen.h
 	gcc $(flags) -c src/main.c -o $@ $(sdl)
+
+obj/cpu.o: src/cpu.c include/cpu.h include/memory.h include/screen.h
+	gcc $(flags) -c src/cpu.c -o $@ 
 
 obj/memory.o: src/memory.c include/memory.h
 	gcc $(flags) -c src/memory.c -o $@ $(sdl)

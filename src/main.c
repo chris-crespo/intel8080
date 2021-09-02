@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <SDL.h>
 
+#include "cpu.h"
 #include "memory.h"
 #include "screen.h"
 
@@ -26,5 +27,7 @@ int main(int argc, char **argv) {
             if (window_close(event))
                 screen_quit();
         }
+
+        cpu_tick();
     }
 }

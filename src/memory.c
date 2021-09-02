@@ -2,7 +2,6 @@
 #include <string.h>
 
 #include "memory.h"
-#include "types.h"
 
 static u8 memory[0x8000];
 
@@ -30,4 +29,8 @@ void load_rom(const char *rom) {
     load_part(0x0800, rom, 'g');
     load_part(0x1000, rom, 'f');
     load_part(0x1800, rom, 'e');
+}
+
+u8 memory_fetch(u16 addr) {
+    return memory[addr];
 }
