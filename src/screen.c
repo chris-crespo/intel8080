@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <SDL.h>
 #include "screen.h"
 
@@ -30,4 +31,6 @@ void screen_quit(void) {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
+    
+    exit(0);
 }
