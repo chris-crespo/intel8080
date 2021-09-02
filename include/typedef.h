@@ -1,8 +1,8 @@
 #ifndef TYPEDEF_H
 #define TYPEDEF_H
 
-typedef Registers Registers;
-typedef Flags     Flags;
-typedef CPU       CPU;
+typedef struct Registers Registers;
+typedef struct Flags     Flags;
+typedef struct CPU       CPU;
 
 #endif
