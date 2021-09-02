@@ -43,9 +43,15 @@ struct Flags {
 struct CPU {
     Registers regs;
     Flags flags;
-    u16 pc;
-    u16 sp;
 
+    u16 sp;
+    union {
+        u16 pc;
+        struct {
+            u8 pc_low;
+            u8 pc_hi;
+        };
+    };
 };
 
 void cpu_tick(void);
