@@ -1,6 +1,7 @@
 #ifndef CPU_H
 #define CPU_H
 
+#include <stdbool.h>
 #include "types.h"
 
 struct Registers {
@@ -43,6 +44,8 @@ struct Flags {
 struct CPU {
     Registers regs;
     Flags flags;
+
+    bool interrupts_enabled;
 
     union {
         u16 sp;
