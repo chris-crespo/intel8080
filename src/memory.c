@@ -34,3 +34,7 @@ void load_rom(const char *rom) {
 u8 memory_fetch(u16 addr) {
     return memory[addr];
 }
+
+void memory_write(u16 addr, u8 value) {
+    memory[addr] = value; 
+}
