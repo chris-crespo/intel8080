@@ -3,8 +3,8 @@
 #include "screen.h"
 
 #define SCALE 1
-#define SCREEN_WIDTH  256 * SCALE
-#define SCREEN_HEIGHT 224 * SCALE 
+#define SCREEN_WIDTH  224 * SCALE
+#define SCREEN_HEIGHT 256 * SCALE 
 
 static SDL_Window   *window; 
 static SDL_Renderer *renderer;
