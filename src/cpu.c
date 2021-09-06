@@ -62,10 +62,6 @@ static inline u8 dcr(u8 reg) {
     return value;
 }
 
-static inline void dcr_m(void) {
-    u8 value = memory_read(cpu.regs.hl) - 1;
-}
-
 static inline void dad(u16 value) {
     cpu.regs.hl += value;
     set_carry(cpu.regs.hl < value);
