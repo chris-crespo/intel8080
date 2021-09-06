@@ -31,7 +31,7 @@ void load_rom(const char *rom) {
     load_part(0x1800, rom, 'e');
 }
 
-u8 memory_fetch(u16 addr) {
+u8 memory_read(u16 addr) {
     return memory[addr];
 }
 
