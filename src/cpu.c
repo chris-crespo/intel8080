@@ -53,11 +53,17 @@ static inline void set_aux(u8 value) {
     cpu.flags.aux_carry = value;
 }
 
-static inline void dcr(u8 *reg) {
-    u8 value = (*reg)--;
+static inline u8 dcr(u8 reg) {
+    u8 value = reg - 1;
 
     set_zsp(value);
     set_aux((value & 0xf) == 0xf);
+
+    return value;
+}
+
+static inline void dcr_m(void) {
+    u8 value = memory_read(cpu.regs.hl) - 1;
 }
 
 static inline void dad(u16 value) {
@@ -180,8 +186,14 @@ void cpu_tick(void) {
         case 0x23: cpu.regs.hl++; break;
 
         // DCR
-        case 0x05: dcr(&cpu.regs.b); break;
-        case 0x3d: dcr(&cpu.regs.a); break; 
+        case 0x05: cpu.regs.b = dcr(cpu.regs.b); break;
+        case 0x0d: cpu.regs.c = dcr(cpu.regs.c); break;
+        case 0x15: cpu.regs.d = dcr(cpu.regs.d); break;
+        case 0x1d: cpu.regs.e = dcr(cpu.regs.e); break;
+        case 0x25: cpu.regs.h = dcr(cpu.regs.h); break;
+        case 0x2d: cpu.regs.l = dcr(cpu.regs.l); break;
+        case 0x35: memory_write(cpu.regs.hl, dcr(memory_read(cpu.regs.hl))); break;
+        case 0x3d: cpu.regs.a = dcr(cpu.regs.a); break; 
 
         // MVI
         case 0x3e: cpu.regs.a = next_byte(); break;
