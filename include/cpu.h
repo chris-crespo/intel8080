@@ -64,6 +64,7 @@ struct CPU {
     };
 };
 
+void cpu_set_pc(u16 addr);
 void cpu_tick(void);
 
 #endif

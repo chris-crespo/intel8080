@@ -4,6 +4,10 @@
 
 static CPU cpu;
 
+void cpu_set_pc(u16 addr) {
+    cpu.pc = addr;
+}
+
 static void not_implemented(u8 opcode) {
     fprintf(stderr, "Opcode 0x%02x not implemented.\n", opcode);
     screen_quit();
@@ -76,6 +80,13 @@ static inline void ana(u8 value) {
     cpu.regs.a &= value;
     set_carry(0);
     set_zsp(cpu.regs.a);
+}
+
+static inline void xra(u8 value) {
+    cpu.regs.a ^= value;
+    set_zsp(cpu.regs.a);
+    set_carry(0);
+    set_aux(0);
 }
 
 static inline void push(u16 value) {
@@ -167,6 +178,7 @@ static inline void rst(u8 addr) {
 
 void cpu_tick(void) {
     u8 opcode = next_byte();
+    //print_state(opcode);
     switch (opcode) {
         // NOP
         case 0x00: break;
@@ -285,6 +297,17 @@ void cpu_tick(void) {
         case 0xa7: ana(cpu.regs.a); break;
         case 0xe6: ana(next_byte()); break;
 
+        // XRA
+        case 0xaf: xra(cpu.regs.a); break;
+        case 0xa8: xra(cpu.regs.b); break;
+        case 0xa9: xra(cpu.regs.c); break;
+        case 0xaa: xra(cpu.regs.d); break;
+        case 0xab: xra(cpu.regs.e); break;
+        case 0xac: xra(cpu.regs.h); break;
+        case 0xad: xra(cpu.regs.l); break;
+        case 0xae: xra(memory_read(cpu.regs.hl)); break;
+        case 0xee: xra(next_byte()); break;
+
         // PUSH
         case 0xc5: push(cpu.regs.bc); break;
         case 0xd5: push(cpu.regs.de); break;
@@ -331,5 +354,4 @@ void cpu_tick(void) {
 
         default: not_implemented(opcode);
     }
-    print_state(opcode);
 }
