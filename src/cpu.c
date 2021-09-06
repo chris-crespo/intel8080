@@ -178,7 +178,7 @@ static inline void rst(u8 addr) {
 
 void cpu_tick(void) {
     u8 opcode = next_byte();
-    //print_state(opcode);
+    print_state(opcode);
     switch (opcode) {
         // NOP
         case 0x00: break;
@@ -190,8 +190,10 @@ void cpu_tick(void) {
         case 0x31: cpu.sp = next_word(); break;
 
         // INX
+        case 0x03: cpu.regs.bc++; break;
         case 0x13: cpu.regs.de++; break;
         case 0x23: cpu.regs.hl++; break;
+        case 0x33: cpu.sp++; break;
 
         // DCR
         case 0x05: cpu.regs.b = dcr(cpu.regs.b); break;
