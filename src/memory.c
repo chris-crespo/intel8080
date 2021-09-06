@@ -20,7 +20,7 @@ static void load_part(u16 addr, const char *rom, char part) {
     sprintf(filename, "%s.%c", rom, part);
 
     File *file = open_file(filename);
-    fread(&memory[addr], 8, 0x800, file);
+    fread(&memory[addr], 1, 0x800, file);
     fclose(file);
 }
 
