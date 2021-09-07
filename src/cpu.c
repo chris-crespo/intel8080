@@ -90,6 +90,7 @@ static inline void xra(u8 value) {
 }
 
 static inline void push(u16 value) {
+    printf("SP: %04x\n", cpu.sp);
     memory_write(--cpu.sp, value >> 8);
     memory_write(--cpu.sp, value & 0xff);
 }
@@ -157,6 +158,7 @@ static inline void call(u8 cond) {
 
 static inline void out(void) {
     printf("OUT Device number: %d.\n", next_byte());
+    screen_quit();
 }
 
 static inline void xchg(void) {
@@ -184,157 +186,167 @@ void cpu_tick(void) {
         case 0x00: break;
 
         // LXI
-        case 0x01: cpu.regs.bc = next_word(); break;
-        case 0x11: cpu.regs.de = next_word(); break;
+        //case 0x01: cpu.regs.bc = next_word(); break;
+        //case 0x11: cpu.regs.de = next_word(); break;
         case 0x21: cpu.regs.hl = next_word(); break;
         case 0x31: cpu.sp = next_word(); break;
 
-        // INX
-        case 0x03: cpu.regs.bc++; break;
-        case 0x13: cpu.regs.de++; break;
-        case 0x23: cpu.regs.hl++; break;
-        case 0x33: cpu.sp++; break;
+        //// INX
+        //case 0x03: cpu.regs.bc++; break;
+        //case 0x13: cpu.regs.de++; break;
+        //case 0x23: cpu.regs.hl++; break;
+        //case 0x33: cpu.sp++; break;
 
-        // DCR
-        case 0x05: cpu.regs.b = dcr(cpu.regs.b); break;
-        case 0x0d: cpu.regs.c = dcr(cpu.regs.c); break;
-        case 0x15: cpu.regs.d = dcr(cpu.regs.d); break;
-        case 0x1d: cpu.regs.e = dcr(cpu.regs.e); break;
-        case 0x25: cpu.regs.h = dcr(cpu.regs.h); break;
-        case 0x2d: cpu.regs.l = dcr(cpu.regs.l); break;
-        case 0x35: memory_write(cpu.regs.hl, dcr(memory_read(cpu.regs.hl))); break;
-        case 0x3d: cpu.regs.a = dcr(cpu.regs.a); break; 
+        //// DCR
+        //case 0x05: cpu.regs.b = dcr(cpu.regs.b); break;
+        //case 0x0d: cpu.regs.c = dcr(cpu.regs.c); break;
+        //case 0x15: cpu.regs.d = dcr(cpu.regs.d); break;
+        //case 0x1d: cpu.regs.e = dcr(cpu.regs.e); break;
+        //case 0x25: cpu.regs.h = dcr(cpu.regs.h); break;
+        //case 0x2d: cpu.regs.l = dcr(cpu.regs.l); break;
+        //case 0x35: memory_write(cpu.regs.hl, dcr(memory_read(cpu.regs.hl))); break;
+        //case 0x3d: cpu.regs.a = dcr(cpu.regs.a); break; 
 
-        // MVI
+        //// MVI
         case 0x3e: cpu.regs.a = next_byte(); break;
-        case 0x06: cpu.regs.b = next_byte(); break;
+        //case 0x06: cpu.regs.b = next_byte(); break;
         case 0x0e: cpu.regs.c = next_byte(); break;
         case 0x26: cpu.regs.h = next_byte(); break;
-        case 0x36: memory_write(cpu.regs.hl, next_byte()); break;
+        //case 0x36: memory_write(cpu.regs.hl, next_byte()); break;
 
-        // DAD
-        case 0x09: dad(cpu.regs.bc); break;
-        case 0x19: dad(cpu.regs.de); break;
-        case 0x29: dad(cpu.regs.hl); break;
+        //// DAD
+        //case 0x09: dad(cpu.regs.bc); break;
+        //case 0x19: dad(cpu.regs.de); break;
+        //case 0x29: dad(cpu.regs.hl); break;
 
-        // LDAX
-        case 0x1a: cpu.regs.a = memory_read(cpu.regs.de); break;
+        //// LDAX
+        //case 0x1a: cpu.regs.a = memory_read(cpu.regs.de); break;
 
-        // RRC
+        //// RRC
         case 0x0f: rrc(); break;
 
-        // STA
-        case 0x32: memory_write(next_word(), cpu.regs.a); break;
-                   
-        // LDA
+        //// STA
+        //case 0x32: memory_write(next_word(), cpu.regs.a); break;
+                   //
+        //// LDA
         case 0x3a: cpu.regs.a = memory_read(next_word()); break;
-
-        // MOV
-        case 0x7f: cpu.regs.a = cpu.regs.a; break;
+//
+        //// MOV
+        //case 0x7f: cpu.regs.a = cpu.regs.a; break;
         case 0x78: cpu.regs.a = cpu.regs.b; break;
         case 0x79: cpu.regs.a = cpu.regs.c; break;
-        case 0x7a: cpu.regs.a = cpu.regs.d; break;
-        case 0x7b: cpu.regs.a = cpu.regs.e; break;
+        //case 0x7a: cpu.regs.a = cpu.regs.d; break;
+        //case 0x7b: cpu.regs.a = cpu.regs.e; break;
         case 0x7c: cpu.regs.a = cpu.regs.h; break;
         case 0x7d: cpu.regs.a = cpu.regs.l; break;
         case 0x7e: cpu.regs.a = memory_read(cpu.regs.hl); break;
-        case 0x47: cpu.regs.b = cpu.regs.a; break;
-        case 0x40: cpu.regs.b = cpu.regs.b; break;
-        case 0x41: cpu.regs.b = cpu.regs.c; break;
-        case 0x42: cpu.regs.b = cpu.regs.d; break;
-        case 0x43: cpu.regs.b = cpu.regs.e; break;
-        case 0x44: cpu.regs.b = cpu.regs.h; break;
-        case 0x45: cpu.regs.b = cpu.regs.l; break;
-        case 0x46: cpu.regs.b = memory_read(cpu.regs.hl); break;
-        case 0x4f: cpu.regs.c = cpu.regs.a; break;
-        case 0x48: cpu.regs.c = cpu.regs.b; break;
-        case 0x49: cpu.regs.c = cpu.regs.c; break;
-        case 0x4a: cpu.regs.c = cpu.regs.d; break;
-        case 0x4b: cpu.regs.c = cpu.regs.e; break;
-        case 0x4c: cpu.regs.c = cpu.regs.h; break;
-        case 0x4d: cpu.regs.c = cpu.regs.l; break;
-        case 0x4e: cpu.regs.c = memory_read(cpu.regs.hl); break;
-        case 0x57: cpu.regs.d = cpu.regs.a; break;
-        case 0x50: cpu.regs.d = cpu.regs.b; break;
-        case 0x51: cpu.regs.d = cpu.regs.c; break;
-        case 0x52: cpu.regs.d = cpu.regs.d; break;
-        case 0x53: cpu.regs.d = cpu.regs.e; break;
-        case 0x54: cpu.regs.d = cpu.regs.h; break;
-        case 0x55: cpu.regs.d = cpu.regs.l; break;
-        case 0x56: cpu.regs.d = memory_read(cpu.regs.hl); break;
+        //case 0x47: cpu.regs.b = cpu.regs.a; break;
+        //case 0x40: cpu.regs.b = cpu.regs.b; break;
+        //case 0x41: cpu.regs.b = cpu.regs.c; break;
+        //case 0x42: cpu.regs.b = cpu.regs.d; break;
+        //case 0x43: cpu.regs.b = cpu.regs.e; break;
+        //case 0x44: cpu.regs.b = cpu.regs.h; break;
+        //case 0x45: cpu.regs.b = cpu.regs.l; break;
+        //case 0x46: cpu.regs.b = memory_read(cpu.regs.hl); break;
+        //case 0x4f: cpu.regs.c = cpu.regs.a; break;
+        //case 0x48: cpu.regs.c = cpu.regs.b; break;
+        //case 0x49: cpu.regs.c = cpu.regs.c; break;
+        //case 0x4a: cpu.regs.c = cpu.regs.d; break;
+        //case 0x4b: cpu.regs.c = cpu.regs.e; break;
+        //case 0x4c: cpu.regs.c = cpu.regs.h; break;
+        //case 0x4d: cpu.regs.c = cpu.regs.l; break;
+        //case 0x4e: cpu.regs.c = memory_read(cpu.regs.hl); break;
+        //case 0x57: cpu.regs.d = cpu.regs.a; break;
+        //case 0x50: cpu.regs.d = cpu.regs.b; break;
+        //case 0x51: cpu.regs.d = cpu.regs.c; break;
+        //case 0x52: cpu.regs.d = cpu.regs.d; break;
+        //case 0x53: cpu.regs.d = cpu.regs.e; break;
+        //case 0x54: cpu.regs.d = cpu.regs.h; break;
+        //case 0x55: cpu.regs.d = cpu.regs.l; break;
+        //case 0x56: cpu.regs.d = memory_read(cpu.regs.hl); break;
         case 0x5f: cpu.regs.e = cpu.regs.a; break;
-        case 0x58: cpu.regs.e = cpu.regs.b; break;
-        case 0x59: cpu.regs.e = cpu.regs.c; break;
-        case 0x5a: cpu.regs.e = cpu.regs.d; break;
-        case 0x5b: cpu.regs.e = cpu.regs.e; break;
-        case 0x5c: cpu.regs.e = cpu.regs.h; break;
-        case 0x5d: cpu.regs.e = cpu.regs.l; break;
-        case 0x5e: cpu.regs.e = memory_read(cpu.regs.hl); break;
-        case 0x67: cpu.regs.h = cpu.regs.a; break;
-        case 0x60: cpu.regs.h = cpu.regs.b; break;
-        case 0x61: cpu.regs.h = cpu.regs.c; break;
-        case 0x62: cpu.regs.h = cpu.regs.d; break;
-        case 0x63: cpu.regs.h = cpu.regs.e; break;
-        case 0x64: cpu.regs.h = cpu.regs.h; break;
-        case 0x65: cpu.regs.h = cpu.regs.l; break; 
-        case 0x66: cpu.regs.h = memory_read(cpu.regs.hl); break;
+        //case 0x58: cpu.regs.e = cpu.regs.b; break;
+        //case 0x59: cpu.regs.e = cpu.regs.c; break;
+        //case 0x5a: cpu.regs.e = cpu.regs.d; break;
+        //case 0x5b: cpu.regs.e = cpu.regs.e; break;
+        //case 0x5c: cpu.regs.e = cpu.regs.h; break;
+        //case 0x5d: cpu.regs.e = cpu.regs.l; break;
+        //case 0x5e: cpu.regs.e = memory_read(cpu.regs.hl); break;
+        //case 0x67: cpu.regs.h = cpu.regs.a; break;
+        //case 0x60: cpu.regs.h = cpu.regs.b; break;
+        //case 0x61: cpu.regs.h = cpu.regs.c; break;
+        //case 0x62: cpu.regs.h = cpu.regs.d; break;
+        //case 0x63: cpu.regs.h = cpu.regs.e; break;
+        //case 0x64: cpu.regs.h = cpu.regs.h; break;
+        //case 0x65: cpu.regs.h = cpu.regs.l; break; 
+        //case 0x66: cpu.regs.h = memory_read(cpu.regs.hl); break;
         case 0x6f: cpu.regs.l = cpu.regs.a; break;
-        case 0x68: cpu.regs.l = cpu.regs.b; break;
-        case 0x69: cpu.regs.l = cpu.regs.c; break;
-        case 0x6a: cpu.regs.l = cpu.regs.d; break;
-        case 0x6b: cpu.regs.l = cpu.regs.e; break;
-        case 0x6c: cpu.regs.l = cpu.regs.h; break;
-        case 0x6d: cpu.regs.l = cpu.regs.l; break;
-        case 0x6e: cpu.regs.l = memory_read(cpu.regs.hl); break;
-        case 0x77: memory_write(cpu.regs.hl, cpu.regs.a); break;
-        case 0x70: memory_write(cpu.regs.hl, cpu.regs.b); break;
-        case 0x71: memory_write(cpu.regs.hl, cpu.regs.c); break;
-        case 0x72: memory_write(cpu.regs.hl, cpu.regs.d); break;
-        case 0x73: memory_write(cpu.regs.hl, cpu.regs.e); break;
-        case 0x74: memory_write(cpu.regs.hl, cpu.regs.h); break;
-        case 0x75: memory_write(cpu.regs.hl, cpu.regs.l); break;
-        case 0x76: memory_write(cpu.regs.hl, memory_read(cpu.regs.hl)); break;
+        //case 0x68: cpu.regs.l = cpu.regs.b; break;
+        //case 0x69: cpu.regs.l = cpu.regs.c; break;
+        //case 0x6a: cpu.regs.l = cpu.regs.d; break;
+        //case 0x6b: cpu.regs.l = cpu.regs.e; break;
+        //case 0x6c: cpu.regs.l = cpu.regs.h; break;
+        //case 0x6d: cpu.regs.l = cpu.regs.l; break;
+        //case 0x6e: cpu.regs.l = memory_read(cpu.regs.hl); break;
+        //case 0x77: memory_write(cpu.regs.hl, cpu.regs.a); break;
+        //case 0x70: memory_write(cpu.regs.hl, cpu.regs.b); break;
+        //case 0x71: memory_write(cpu.regs.hl, cpu.regs.c); break;
+        //case 0x72: memory_write(cpu.regs.hl, cpu.regs.d); break;
+        //case 0x73: memory_write(cpu.regs.hl, cpu.regs.e); break;
+        //case 0x74: memory_write(cpu.regs.hl, cpu.regs.h); break;
+        //case 0x75: memory_write(cpu.regs.hl, cpu.regs.l); break;
+        //case 0x76: memory_write(cpu.regs.hl, memory_read(cpu.regs.hl)); break;
 
-        // ANA
-        case 0xa7: ana(cpu.regs.a); break;
+        //// ANA
+        //case 0xa7: ana(cpu.regs.a); break;
         case 0xe6: ana(next_byte()); break;
 
-        // XRA
-        case 0xaf: xra(cpu.regs.a); break;
-        case 0xa8: xra(cpu.regs.b); break;
-        case 0xa9: xra(cpu.regs.c); break;
-        case 0xaa: xra(cpu.regs.d); break;
-        case 0xab: xra(cpu.regs.e); break;
-        case 0xac: xra(cpu.regs.h); break;
-        case 0xad: xra(cpu.regs.l); break;
-        case 0xae: xra(memory_read(cpu.regs.hl)); break;
-        case 0xee: xra(next_byte()); break;
+        //// XRA
+        //case 0xaf: xra(cpu.regs.a); break;
+        //case 0xa8: xra(cpu.regs.b); break;
+        //case 0xa9: xra(cpu.regs.c); break;
+        //case 0xaa: xra(cpu.regs.d); break;
+        //case 0xab: xra(cpu.regs.e); break;
+        //case 0xac: xra(cpu.regs.h); break;
+        //case 0xad: xra(cpu.regs.l); break;
+        //case 0xae: xra(memory_read(cpu.regs.hl)); break;
+        //case 0xee: xra(next_byte()); break;
 
-        // PUSH
+        //// PUSH
         case 0xc5: push(cpu.regs.bc); break;
         case 0xd5: push(cpu.regs.de); break;
         case 0xe5: push(cpu.regs.hl); break;
         case 0xf5: push_psw(); break;
 
-        // POP
+        //// POP
         case 0xc1: cpu.regs.bc = pop(); break;
         case 0xd1: cpu.regs.de = pop(); break;
         case 0xe1: cpu.regs.hl = pop(); break;
         case 0xf1: pop_psw(); break;
 
-        // JMP
+        //// JMP
         case 0xc2: jmp(!cpu.flags.zero); break;
         case 0xc3: jmp(1); break;
         case 0xca: jmp(cpu.flags.zero); break;
+        case 0xd2: jmp(!cpu.flags.carry); break;
+        case 0xda: jmp(cpu.flags.carry); break;
+        //case 0xe2: jmp(!cpu.flags.sign); break;
+        //case 0xea: jmp(cpu.flags.sign); break;
 
         // ADD
         case 0xc6: add(&cpu.regs.a, next_byte()); break;
 
         // RET
         case 0xc9: ret(1); break;
+        case 0xd0: ret(!cpu.flags.carry); break;
+        case 0xd8: ret(cpu.flags.carry); break;
 
         // CALL
         case 0xcd: call(1); break;
+        case 0xd4: call(!cpu.flags.carry); break;
+        case 0xdc: call(cpu.flags.carry); break;
+        case 0xe4: call(cpu.flags.parity); break;
+        case 0xec: call(cpu.flags.parity); break;
 
         // OUT
         case 0xd3: out(); break;
@@ -348,12 +360,11 @@ void cpu_tick(void) {
         // CPI
         case 0xfe: cmp(next_byte()); break;
 
-        // RST
-        case 0xff: rst(0x38); break;
+        //// RST
+        //case 0xff: rst(0x38); break;
 
-        // Undocumented opcodes
-        case 0x20: break;
-
+        //// Undocumented opcodes
+        //case 0x20: break;
         default: not_implemented(opcode);
     }
 }
