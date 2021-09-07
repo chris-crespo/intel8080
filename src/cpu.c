@@ -57,6 +57,15 @@ static inline void set_aux(u8 value) {
     cpu.flags.aux_carry = value;
 }
 
+static inline u8 inr(u8 reg) {
+    u8 value = reg + 1;
+
+    set_zsp(value);
+    set_aux((value & 0xf) == 0xf);
+
+    return value;
+}
+
 static inline u8 dcr(u8 reg) {
     u8 value = reg - 1;
 
@@ -90,7 +99,6 @@ static inline void xra(u8 value) {
 }
 
 static inline void push(u16 value) {
-    printf("SP: %04x\n", cpu.sp);
     memory_write(--cpu.sp, value >> 8);
     memory_write(--cpu.sp, value & 0xff);
 }
@@ -157,8 +165,27 @@ static inline void call(u8 cond) {
 }
 
 static inline void out(void) {
-    printf("OUT Device number: %d.\n", next_byte());
-    screen_quit();
+    u8 port = next_byte();
+    switch (port) {
+        case 0: screen_quit();
+        case 1: {
+            u8 operation = cpu.regs.c;
+            if (operation == 9) {
+                u16 addr = cpu.regs.de;
+
+                u8 c;
+                while ((c = memory_read(addr++)) != '$') {
+                    printf("%c", c);
+                }
+
+                printf("\n");
+                screen_quit();
+            }
+
+            break;
+        }
+        default: fprintf(stderr, "Port %d not handled.\n", port); break;
+    }
 }
 
 static inline void xchg(void) {
@@ -187,18 +214,21 @@ void cpu_tick(void) {
 
         // LXI
         //case 0x01: cpu.regs.bc = next_word(); break;
-        //case 0x11: cpu.regs.de = next_word(); break;
+        case 0x11: cpu.regs.de = next_word(); break;
         case 0x21: cpu.regs.hl = next_word(); break;
         case 0x31: cpu.sp = next_word(); break;
 
-        //// INX
+        // INX
         //case 0x03: cpu.regs.bc++; break;
         //case 0x13: cpu.regs.de++; break;
-        //case 0x23: cpu.regs.hl++; break;
+        case 0x23: cpu.regs.hl++; break;
         //case 0x33: cpu.sp++; break;
+        
+        // INR
+        case 0x3c: cpu.regs.a = inr(cpu.regs.a); break;
 
-        //// DCR
-        //case 0x05: cpu.regs.b = dcr(cpu.regs.b); break;
+        // DCR
+        case 0x05: cpu.regs.b = dcr(cpu.regs.b); break;
         //case 0x0d: cpu.regs.c = dcr(cpu.regs.c); break;
         //case 0x15: cpu.regs.d = dcr(cpu.regs.d); break;
         //case 0x1d: cpu.regs.e = dcr(cpu.regs.e); break;
@@ -207,31 +237,31 @@ void cpu_tick(void) {
         //case 0x35: memory_write(cpu.regs.hl, dcr(memory_read(cpu.regs.hl))); break;
         //case 0x3d: cpu.regs.a = dcr(cpu.regs.a); break; 
 
-        //// MVI
+        // MVI
         case 0x3e: cpu.regs.a = next_byte(); break;
-        //case 0x06: cpu.regs.b = next_byte(); break;
+        case 0x06: cpu.regs.b = next_byte(); break;
         case 0x0e: cpu.regs.c = next_byte(); break;
         case 0x26: cpu.regs.h = next_byte(); break;
         //case 0x36: memory_write(cpu.regs.hl, next_byte()); break;
 
-        //// DAD
+        // DAD
         //case 0x09: dad(cpu.regs.bc); break;
         //case 0x19: dad(cpu.regs.de); break;
         //case 0x29: dad(cpu.regs.hl); break;
 
-        //// LDAX
+        // LDAX
         //case 0x1a: cpu.regs.a = memory_read(cpu.regs.de); break;
 
-        //// RRC
+        // RRC
         case 0x0f: rrc(); break;
 
-        //// STA
+        // STA
         //case 0x32: memory_write(next_word(), cpu.regs.a); break;
-                   //
-        //// LDA
+                   
+        // LDA
         case 0x3a: cpu.regs.a = memory_read(next_word()); break;
-//
-        //// MOV
+
+        // MOV
         //case 0x7f: cpu.regs.a = cpu.regs.a; break;
         case 0x78: cpu.regs.a = cpu.regs.b; break;
         case 0x79: cpu.regs.a = cpu.regs.c; break;
@@ -312,41 +342,56 @@ void cpu_tick(void) {
         //case 0xae: xra(memory_read(cpu.regs.hl)); break;
         //case 0xee: xra(next_byte()); break;
 
-        //// PUSH
+        // PUSH
         case 0xc5: push(cpu.regs.bc); break;
         case 0xd5: push(cpu.regs.de); break;
         case 0xe5: push(cpu.regs.hl); break;
         case 0xf5: push_psw(); break;
 
-        //// POP
+        // POP
         case 0xc1: cpu.regs.bc = pop(); break;
         case 0xd1: cpu.regs.de = pop(); break;
         case 0xe1: cpu.regs.hl = pop(); break;
         case 0xf1: pop_psw(); break;
 
-        //// JMP
+        // PCHL
+        case 0xe9: cpu.pc = cpu.regs.hl; break;
+
+        // JMP
         case 0xc2: jmp(!cpu.flags.zero); break;
         case 0xc3: jmp(1); break;
         case 0xca: jmp(cpu.flags.zero); break;
         case 0xd2: jmp(!cpu.flags.carry); break;
         case 0xda: jmp(cpu.flags.carry); break;
-        //case 0xe2: jmp(!cpu.flags.sign); break;
-        //case 0xea: jmp(cpu.flags.sign); break;
+        case 0xe2: jmp(!cpu.flags.parity); break;
+        case 0xea: jmp(cpu.flags.parity); break;
+        case 0xf2: jmp(!cpu.flags.sign); break;
+        case 0xfa: jmp(cpu.flags.sign); break;
 
         // ADD
         case 0xc6: add(&cpu.regs.a, next_byte()); break;
 
         // RET
+        case 0xc0: ret(!cpu.flags.zero); break;
+        case 0xc8: ret(cpu.flags.zero); break;
         case 0xc9: ret(1); break;
         case 0xd0: ret(!cpu.flags.carry); break;
         case 0xd8: ret(cpu.flags.carry); break;
+        case 0xe0: ret(!cpu.flags.parity); break;
+        case 0xe8: ret(cpu.flags.parity); break;
+        case 0xf0: ret(!cpu.flags.sign); break;
+        case 0xf8: ret(cpu.flags.sign); break;
 
         // CALL
+        case 0xc4: call(!cpu.flags.zero); break;
+        case 0xcc: call(cpu.flags.zero); break;
         case 0xcd: call(1); break;
         case 0xd4: call(!cpu.flags.carry); break;
         case 0xdc: call(cpu.flags.carry); break;
-        case 0xe4: call(cpu.flags.parity); break;
+        case 0xe4: call(!cpu.flags.parity); break;
         case 0xec: call(cpu.flags.parity); break;
+        case 0xf4: call(!cpu.flags.sign); break;
+        case 0xfc: call(cpu.flags.sign); break;
 
         // OUT
         case 0xd3: out(); break;
