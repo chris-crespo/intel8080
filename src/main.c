@@ -7,7 +7,7 @@
 
 #define USAGE "Usage: ./build/emulator [rom].\n"
 
-static bool window_close(SDL_Event event) {
+static inline bool window_close(SDL_Event event) {
     return event.type == SDL_WINDOWEVENT 
         && event.window.event == SDL_WINDOWEVENT_CLOSE;
 }
