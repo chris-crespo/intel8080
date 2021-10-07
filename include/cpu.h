@@ -45,8 +45,6 @@ struct CPU {
     Registers regs;
     Flags flags;
 
-    bool interrupts_enabled;
-
     union {
         u16 sp;
         struct {
@@ -62,9 +60,17 @@ struct CPU {
             u8 pc_hi;
         };
     };
+
+    bool interrupts_enabled;
+
+    u8 *memory;
+
+    void (*in)(CPU *cpu); 
+    void (*out)(CPU *cpu);
 };
 
-void cpu_set_pc(u16 addr);
-void cpu_tick(void);
+void cpu_init(CPU *cpu, void (*in)(CPU *cpu), void (*out)(CPU *cpu));
+void cpu_reset(CPU *cpu);
+void cpu_execute(CPU *cpu, u8 opcode);
 
 #endif

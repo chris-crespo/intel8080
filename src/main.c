@@ -2,7 +2,6 @@
 #include <SDL.h>
 
 #include "cpu.h"
-#include "memory.h"
 #include "screen.h"
 
 #define USAGE "Usage: ./build/emulator [rom].\n"
@@ -18,8 +17,10 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    load_rom(argv[1]);
     screen_init();
+
+    CPU cpu;
+    cpu_init(&cpu, 0, 0);
 
     while (1) {
         SDL_Event event;
@@ -28,6 +29,6 @@ int main(int argc, char **argv) {
                 screen_quit();
         }
 
-        cpu_tick();
+        cpu_execute(&cpu);
     }
 }
