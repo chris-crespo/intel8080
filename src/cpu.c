@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include "cpu.h"
 
-void cpu_init(CPU *cpu, void (*in)(CPU *cpu), void (*out)(CPU *cpu)) {
+void cpu_init(CPU *cpu, void (*in)(CPU*), void (*out)(CPU*, u8)) {
     cpu->regs.a  = 0;
     cpu->regs.bc = 0;
     cpu->regs.de = 0;
@@ -23,8 +23,8 @@ void cpu_init(CPU *cpu, void (*in)(CPU *cpu), void (*out)(CPU *cpu)) {
 }
 
 void cpu_reset(CPU *cpu) {
-    void (*in)(CPU *cpu)  = cpu->in;
-    void (*out)(CPU *cpu) = cpu->out;
+    void (*in)(CPU*) = cpu->in;
+    void (*out)(CPU*, u8) = cpu->out;
 
     free(cpu->memory);
     cpu->memory = 0;
@@ -52,16 +52,16 @@ static inline u8 memory_read(CPU *cpu, u16 addr) {
     return cpu->memory[addr];
 }
 
+static inline void memory_write(CPU *cpu, u16 addr, u8 value) {
+    cpu->memory[addr] = value;
+}
+
 static inline u8 next_byte(CPU *cpu) {
     return memory_read(cpu, cpu->pc++);
 }
 
 static inline u16 next_word(CPU *cpu) {
     return next_byte(cpu) | ((u16)next_byte(cpu) << 8);
-}
-
-static inline void memory_write(CPU *cpu, u16 addr, u8 value) {
-    cpu->memory[addr] = value;
 }
 
 static u8 parity(u8 value) {
@@ -77,7 +77,7 @@ static u8 parity(u8 value) {
 
 static inline void set_zsp(CPU *cpu, u8 value) {
     cpu->flags.zero   = (value == 0);
-    cpu->flags.sign   = (value & 0x80) != 0;
+    cpu->flags.sign   = (value & 0x80) >> 7;
     cpu->flags.parity = parity(value);
 }
 
@@ -93,7 +93,7 @@ static inline u8 inr(CPU *cpu, u8 reg) {
     u8 value = reg + 1;
 
     set_zsp(cpu, value);
-    set_aux(cpu, (value & 0xf) == 0xf);
+    set_aux(cpu, (value & 0xf) == 0);
 
     return value;
 }
@@ -258,6 +258,7 @@ void cpu_execute(CPU *cpu, u8 opcode) {
         //case 0x33: cpu->sp++; break;
         
         // INR
+        //case 0x14: cpu->regs.d = inr(cpu, cpu->regs.d); break;
         case 0x3c: cpu->regs.a = inr(cpu, cpu->regs.a); break;
 
         // DCR
@@ -274,7 +275,7 @@ void cpu_execute(CPU *cpu, u8 opcode) {
         case 0x3e: cpu->regs.a = next_byte(cpu); break;
         case 0x06: cpu->regs.b = next_byte(cpu); break;
         case 0x0e: cpu->regs.c = next_byte(cpu); break;
-        case 0x26: cpu->regs.h = next_byte(cpu); break;
+        //case 0x26: cpu->regs.h = next_byte(cpu); break;
         //case 0x36: memory_write(cpu, cpu->regs.hl, next_byte(cpu)); break;
 
         // DAD
@@ -327,7 +328,7 @@ void cpu_execute(CPU *cpu, u8 opcode) {
         //case 0x54: cpu->regs.d = cpu->regs.h; break;
         //case 0x55: cpu->regs.d = cpu->regs.l; break;
         //case 0x56: cpu->regs.d = memory_read(cpu, cpu->regs.hl); break;
-        case 0x5f: cpu->regs.e = cpu->regs.a; break;
+        //case 0x5f: cpu->regs.e = cpu->regs.a; break;
         //case 0x58: cpu->regs.e = cpu->regs.b; break;
         //case 0x59: cpu->regs.e = cpu->regs.c; break;
         //case 0x5a: cpu->regs.e = cpu->regs.d; break;
@@ -343,7 +344,7 @@ void cpu_execute(CPU *cpu, u8 opcode) {
         //case 0x64: cpu->regs.h = cpu->regs.h; break;
         //case 0x65: cpu->regs.h = cpu->regs.l; break; 
         //case 0x66: cpu->regs.h = memory_read(cpu, cpu->regs.hl); break;
-        case 0x6f: cpu->regs.l = cpu->regs.a; break;
+        //case 0x6f: cpu->regs.l = cpu->regs.a; break;
         //case 0x68: cpu->regs.l = cpu->regs.b; break;
         //case 0x69: cpu->regs.l = cpu->regs.c; break;
         //case 0x6a: cpu->regs.l = cpu->regs.d; break;
@@ -402,7 +403,7 @@ void cpu_execute(CPU *cpu, u8 opcode) {
         case 0xfa: jmp(cpu, cpu->flags.sign); break;
 
         // ADD
-        case 0xc6: add(cpu, &cpu->regs.a, next_byte(cpu)); break;
+        //case 0xc6: add(cpu, &cpu->regs.a, next_byte(cpu)); break;
 
         // RET
         case 0xc0: ret(cpu, !cpu->flags.zero); break;
@@ -427,13 +428,13 @@ void cpu_execute(CPU *cpu, u8 opcode) {
         case 0xfc: call(cpu, cpu->flags.sign); break;
 
         // OUT
-        case 0xd3: cpu->out(cpu); break;
+        //case 0xd3: cpu->out(cpu, next_byte(cpu)); break;
 
         // XCHG
-        case 0xeb: xchg(cpu); break;
+        //case 0xeb: xchg(cpu); break;
 
         // EI
-        case 0xfb: cpu->interrupts_enabled = true; break;
+        //case 0xfb: cpu->interrupts_enabled = true; break;
 
         // CPI
         case 0xfe: cmp(cpu, next_byte(cpu)); break;
@@ -442,6 +443,7 @@ void cpu_execute(CPU *cpu, u8 opcode) {
         //case 0xff: rst(cpu, 0x38); break;
 
         // Undocumented opcodes
+        //case 0x18: break;
         //case 0x20: break;
         
         default: not_implemented(opcode);
