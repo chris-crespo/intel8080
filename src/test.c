@@ -3,6 +3,8 @@
 
 #include "cpu.h"
 
+static bool test_done = 0;
+
 static void load_test(u8 *memory, const char *test) {
     File *file = fopen(test, "rb");
     if (!file) {
@@ -16,7 +18,7 @@ static void load_test(u8 *memory, const char *test) {
 
 static inline void out(CPU *cpu, u8 port) {
     switch (port) {
-        case 0: exit(0);
+        case 0: test_done = 1; break;
         case 1: {
             u8 operation = cpu->regs.c;
             if (operation == 9) {
@@ -50,12 +52,13 @@ static void test(const char *filename) {
     cpu.memory[0x6] = 0x01;
     cpu.memory[0x7] = 0xc9;
 
-    while (1) {
+    test_done = 0;
+    while (!test_done) {
         cpu_execute(&cpu, 0);
     }
 }
 
 int main(void) {
     test("tests/8080PRE.COM"); 
-//    test("tests/8080EXM.COM");
+    test("tests/8080EXM.COM");
 }
