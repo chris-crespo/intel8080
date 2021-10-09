@@ -73,4 +73,7 @@ void cpu_init(CPU *cpu, void (*in)(CPU *cpu), void (*out)(CPU *cpu, u8 port));
 void cpu_reset(CPU *cpu);
 void cpu_execute(CPU *cpu, u8 opcode);
 
+u8 memory_read(CPU *cpu, u16 addr);
+void memory_write(CPU *cpu, u16 addr, u8 value);
+
 #endif

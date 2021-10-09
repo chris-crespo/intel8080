@@ -14,9 +14,31 @@ static void load_test(u8 *memory, const char *test) {
     fclose(file);
 }
 
+static inline void out(CPU *cpu, u8 port) {
+    switch (port) {
+        case 0: exit(0);
+        case 1: {
+            u8 operation = cpu->regs.c;
+            if (operation == 9) {
+                u16 addr = cpu->regs.de;
+
+                u8 c;
+                while ((c = memory_read(cpu, addr++)) != '$') {
+                    printf("%c", c);
+                }
+
+                printf("\n");
+            }
+
+            break;
+        }
+        default: fprintf(stderr, "Port %d not handled.\n", port); exit(1);
+    }
+}
+
 static void test(const char *filename) {
     CPU cpu;
-    cpu_init(&cpu, 0, 0);
+    cpu_init(&cpu, 0, out);
 
     load_test(&cpu.memory[0x100], filename);
     cpu.pc = 0x100;
@@ -35,5 +57,5 @@ static void test(const char *filename) {
 
 int main(void) {
     test("tests/8080PRE.COM"); 
-    test("tests/8080EXM.COM");
+//    test("tests/8080EXM.COM");
 }

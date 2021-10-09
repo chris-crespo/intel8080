@@ -48,11 +48,11 @@ static void print_state(CPU *cpu, u8 opcode) {
     printf("ZSPC %d%d%d%d\n", cpu->flags.zero, cpu->flags.sign, cpu->flags.parity, cpu->flags.carry);
 }
 
-static inline u8 memory_read(CPU *cpu, u16 addr) {
+u8 memory_read(CPU *cpu, u16 addr) {
     return cpu->memory[addr];
 }
 
-static inline void memory_write(CPU *cpu, u16 addr, u8 value) {
+void memory_write(CPU *cpu, u16 addr, u8 value) {
     cpu->memory[addr] = value;
 }
 
@@ -195,31 +195,6 @@ static inline void call(CPU *cpu, u8 cond) {
         cpu->pc = addr;
     }
 }
-/**
-static inline void out(void) {
-    u8 port = next_byte(cpu);
-    switch (port) {
-        case 0: screen_quit();
-        case 1: {
-            u8 operation = cpu->regs.c;
-            if (operation == 9) {
-                u16 addr = cpu->regs.de;
-
-                u8 c;
-                while ((c = memory_read(addr++)) != '$') {
-                    printf("%c", c);
-                }
-
-                printf("\n");
-                screen_quit();
-            }
-
-            break;
-        }
-        default: fprintf(stderr, "Port %d not handled.\n", port); break;
-    }
-}
-*/
 
 static inline void xchg(CPU *cpu) {
     u16 temp = cpu->regs.de; 
@@ -428,7 +403,7 @@ void cpu_execute(CPU *cpu, u8 opcode) {
         case 0xfc: call(cpu, cpu->flags.sign); break;
 
         // OUT
-        //case 0xd3: cpu->out(cpu, next_byte(cpu)); break;
+        case 0xd3: cpu->out(cpu, next_byte(cpu)); break;
 
         // XCHG
         //case 0xeb: xchg(cpu); break;
