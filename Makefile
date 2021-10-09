@@ -17,7 +17,7 @@ clean:
 	rm -rf obj/ build/
 
 dirs:
-	mkdir -p obj/ build/
+	@mkdir -p obj/ build/
 
 build/emulator: obj/main.o $(common_deps)
 	gcc $(flags) -o $@ obj/main.o $(common_deps) $(sdl)
