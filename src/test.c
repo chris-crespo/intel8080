@@ -21,7 +21,10 @@ static inline void out(CPU *cpu, u8 port) {
         case 0: test_done = 1; break;
         case 1: {
             u8 operation = cpu->regs.c;
-            if (operation == 9) {
+            if (operation == 2) {
+                printf("%c", cpu->regs.e);
+            }
+            else if (operation == 9) {
                 u16 addr = cpu->regs.de;
 
                 u8 c;
@@ -30,6 +33,10 @@ static inline void out(CPU *cpu, u8 port) {
                 }
 
                 printf("\n");
+            }
+            else {
+                fprintf(stderr, "Operation %d not handled.\n", operation);
+                exit(1);
             }
 
             break;
