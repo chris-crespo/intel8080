@@ -33,12 +33,11 @@ struct Registers {
 };
 
 struct Flags {
-    u8 zero      : 1;
-    u8 sign      : 1;
-    u8 parity    : 1;
-    u8 carry     : 1;
-    u8 aux_carry : 1;
-    u8 pad       : 3;
+    bool zero      : 1;
+    bool sign      : 1;
+    bool parity    : 1;
+    bool carry     : 1;
+    bool aux_carry : 1;
 };
 
 struct CPU {
