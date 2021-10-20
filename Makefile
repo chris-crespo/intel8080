@@ -1,6 +1,6 @@
 common_deps = obj/cpu.o #obj/screen.o
 
-flags = -Wall -Iinclude -g
+flags = -Wall -Wextra -Iinclude -g
 sdl = `sdl2-config --cflags --libs`
 
 .PHONY: all clean build test
