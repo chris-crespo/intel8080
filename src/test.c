@@ -12,7 +12,7 @@ static void load_test(u8 *memory, const char *test) {
         exit(1);
     }
 
-    fread(memory, 1, 0x10000, file);
+    fread(memory, sizeof(u8), 0x10000, file);
     fclose(file);
 }
 
@@ -28,7 +28,7 @@ static inline void out(CPU *cpu, u8 port) {
                 u16 addr = cpu->regs.de;
 
                 u8 c;
-                while ((c = memory_read(cpu, addr++)) != '$') {
+                while ((c = read_byte(cpu, addr++)) != '$') {
                     printf("%c", c);
                 }
 
@@ -61,7 +61,7 @@ static void test(const char *filename) {
 
     test_done = 0;
     while (!test_done) {
-        cpu_execute(&cpu, 0);
+        cpu_execute(&cpu);
     }
 }
 

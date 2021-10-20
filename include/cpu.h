@@ -33,11 +33,11 @@ struct Registers {
 };
 
 struct Flags {
-    bool zero      : 1;
     bool sign      : 1;
+    bool zero      : 1;
+    bool aux_carry : 1;
     bool parity    : 1;
     bool carry     : 1;
-    bool aux_carry : 1;
 };
 
 struct CPU {
@@ -70,9 +70,9 @@ struct CPU {
 
 void cpu_init(CPU *cpu, void (*in)(CPU *cpu), void (*out)(CPU *cpu, u8 port));
 void cpu_reset(CPU *cpu);
-void cpu_execute(CPU *cpu, u8 opcode);
+void cpu_execute(CPU *cpu);
 
-u8 memory_read(CPU *cpu, u16 addr);
-void memory_write(CPU *cpu, u16 addr, u8 value);
+u8 read_byte(CPU *cpu, u16 addr);
+void write_byte(CPU *cpu, u16 addr, u8 value);
 
 #endif
