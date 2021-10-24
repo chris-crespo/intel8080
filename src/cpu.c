@@ -152,7 +152,7 @@ static inline void add(CPU *cpu, u8 value, bool carry) {
     u16 result = cpu->regs.a + value + carry;
 
     set_zsp(cpu, result);
-    set_carry(cpu, result < cpu->regs.a);
+    set_carry(cpu, result >> 8);
     set_aux(cpu, (cpu->regs.a ^ value ^ result) & 0x10);
 
     cpu->regs.a = result;
