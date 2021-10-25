@@ -125,6 +125,40 @@ static inline u8 dcr(CPU *cpu, u8 reg) {
     return value;
 }
 
+static inline void daa(CPU *cpu) {
+    u16 sum = cpu->regs.a;
+
+    u8 lsbs = cpu->regs.a & 0x0f;
+    if (lsbs > 9 || cpu->flags.aux_carry) {
+        sum += 0x06;
+        set_aux(cpu, lsbs > 9);
+    }
+    
+    if (sum >> 8)
+        set_carry(cpu, 1);
+
+    u8 msbs = (sum & 0xf0) >> 4;
+    if (msbs > 9 || cpu->flags.carry) {
+        sum += 0x60;
+        set_carry(cpu, 1);
+    }
+
+    set_zsp(cpu, sum);
+    cpu->regs.a = sum;
+}
+
+static inline void cma(CPU *cpu) {
+    cpu->regs.a = ~cpu->regs.a;
+}
+
+static inline void stc(CPU *cpu) {
+    cpu->flags.carry = 1;
+}
+
+static inline void cmc(CPU *cpu) {
+    cpu->flags.carry = !cpu->flags.carry;
+}
+
 static inline void dad(CPU *cpu, u16 value) {
     cpu->regs.hl += value;
     set_carry(cpu, cpu->regs.hl < value);
@@ -138,6 +172,18 @@ static inline void rlc(CPU *cpu) {
 static inline void rrc(CPU *cpu) {
     set_carry(cpu, cpu->regs.a & 0x1);
     cpu->regs.a = (cpu->regs.a >> 1) | (cpu->flags.carry << 7);
+}
+
+static inline void ral(CPU *cpu) {
+    bool carry = cpu->flags.carry;
+    set_carry(cpu, cpu->regs.a >> 7);
+    cpu->regs.a = cpu->regs.a << 1 | carry;
+}
+
+static inline void rar(CPU *cpu) {
+    bool carry = cpu->flags.carry;
+    set_carry(cpu, cpu->regs.a & 1);
+    cpu->regs.a = cpu->regs.a >> 1 | carry << 7;
 }
 
 static inline void shld(CPU *cpu, u16 addr) {
@@ -281,30 +327,44 @@ void cpu_execute(CPU *cpu) {
         
         // INR
         case 0x3c: cpu->regs.a = inr(cpu, cpu->regs.a); break;
+        case 0x04: cpu->regs.b = inr(cpu, cpu->regs.b); break;
+        case 0x0c: cpu->regs.c = inr(cpu, cpu->regs.c); break;
         case 0x14: cpu->regs.d = inr(cpu, cpu->regs.d); break;
+        case 0x1c: cpu->regs.e = inr(cpu, cpu->regs.e); break;
+        case 0x24: cpu->regs.h = inr(cpu, cpu->regs.h); break;
+        case 0x2c: cpu->regs.l = inr(cpu, cpu->regs.l); break;
         case 0x34: write_byte(cpu, cpu->regs.hl, inr(cpu, read_byte(cpu, cpu->regs.hl))); break;
 
         // DCX
         case 0x0b: cpu->regs.bc -= 1; break;
+        case 0x1b: cpu->regs.de -= 1; break;
         case 0x2b: cpu->regs.hl -= 1; break;
+        case 0x3b: cpu->sp -= 1; break;
 
         // DCR
-        //case 0x3d: cpu->regs.a = dcr(cpu, cpu->regs.a); break; 
+        case 0x3d: cpu->regs.a = dcr(cpu, cpu->regs.a); break; 
         case 0x05: cpu->regs.b = dcr(cpu, cpu->regs.b); break;
         case 0x0d: cpu->regs.c = dcr(cpu, cpu->regs.c); break;
-        //case 0x15: cpu->regs.d = dcr(cpu, cpu->regs.d); break;
-        //case 0x1d: cpu->regs.e = dcr(cpu, cpu->regs.e); break;
-        //case 0x25: cpu->regs.h = dcr(cpu, cpu->regs.h); break;
-        //case 0x2d: cpu->regs.l = dcr(cpu, cpu->regs.l); break;
-        //case 0x35: write_byte(cpu, cpu->regs.hl, dcr(cpu, read_byte(cpu, cpu->regs.hl))); break;
+        case 0x15: cpu->regs.d = dcr(cpu, cpu->regs.d); break;
+        case 0x1d: cpu->regs.e = dcr(cpu, cpu->regs.e); break;
+        case 0x25: cpu->regs.h = dcr(cpu, cpu->regs.h); break;
+        case 0x2d: cpu->regs.l = dcr(cpu, cpu->regs.l); break;
+        case 0x35: write_byte(cpu, cpu->regs.hl, dcr(cpu, read_byte(cpu, cpu->regs.hl))); break;
 
         // MVI
         case 0x3e: cpu->regs.a = next_byte(cpu); break;
         case 0x06: cpu->regs.b = next_byte(cpu); break;
         case 0x0e: cpu->regs.c = next_byte(cpu); break;
         case 0x16: cpu->regs.d = next_byte(cpu); break;
+        case 0x1e: cpu->regs.e = next_byte(cpu); break;
         case 0x26: cpu->regs.h = next_byte(cpu); break;
+        case 0x2e: cpu->regs.l = next_byte(cpu); break;
         case 0x36: write_byte(cpu, cpu->regs.hl, next_byte(cpu)); break;
+
+        case 0x27: daa(cpu); break; // DAA 
+        case 0x2f: cma(cpu); break; // CMA 
+        case 0x37: stc(cpu); break; // STC 
+        case 0x3f: cmc(cpu); break; // CMC 
 
         // DAD
         case 0x09: dad(cpu, cpu->regs.bc); break;
@@ -313,23 +373,25 @@ void cpu_execute(CPU *cpu) {
         case 0x39: dad(cpu, cpu->sp); break;
 
         // STAX
+        case 0x02: write_byte(cpu, cpu->regs.bc, cpu->regs.a); break;
         case 0x12: write_byte(cpu, cpu->regs.de, cpu->regs.a); break;
         case 0x32: write_byte(cpu, next_word(cpu), cpu->regs.a); break; // STA
 
         // LDAX
+        case 0x0a: cpu->regs.a = read_byte(cpu, cpu->regs.bc); break;
         case 0x1a: cpu->regs.a = read_byte(cpu, cpu->regs.de); break;
         case 0x3a: cpu->regs.a = read_byte(cpu, next_word(cpu)); break; // LDA
 
-        case 0x37: set_carry(cpu, 1); break; // STC
-
         case 0x07: rlc(cpu); break; // RLC
         case 0x0f: rrc(cpu); break; // RRC
+        case 0x17: ral(cpu); break; // RAL
+        case 0x1f: rar(cpu); break; // RAR
 
         case 0x22: write_word(cpu, next_word(cpu), cpu->regs.hl); break; // SHLD 
         case 0x2a: cpu->regs.hl = read_word(cpu, next_word(cpu)); break; // LHLD
 
         // MOV
-        //case 0x7f: cpu->regs.a = cpu->regs.a; break;
+        case 0x7f: cpu->regs.a = cpu->regs.a; break;
         case 0x78: cpu->regs.a = cpu->regs.b; break;
         case 0x79: cpu->regs.a = cpu->regs.c; break;
         case 0x7a: cpu->regs.a = cpu->regs.d; break;
@@ -339,67 +401,67 @@ void cpu_execute(CPU *cpu) {
         case 0x7e: cpu->regs.a = read_byte(cpu, cpu->regs.hl); break;
 
         case 0x47: cpu->regs.b = cpu->regs.a; break;
-        //case 0x40: cpu->regs.b = cpu->regs.b; break;
-        //case 0x41: cpu->regs.b = cpu->regs.c; break;
-        //case 0x42: cpu->regs.b = cpu->regs.d; break;
-        //case 0x43: cpu->regs.b = cpu->regs.e; break;
-        //case 0x44: cpu->regs.b = cpu->regs.h; break;
-        //case 0x45: cpu->regs.b = cpu->regs.l; break;
+        case 0x40: cpu->regs.b = cpu->regs.b; break;
+        case 0x41: cpu->regs.b = cpu->regs.c; break;
+        case 0x42: cpu->regs.b = cpu->regs.d; break;
+        case 0x43: cpu->regs.b = cpu->regs.e; break;
+        case 0x44: cpu->regs.b = cpu->regs.h; break;
+        case 0x45: cpu->regs.b = cpu->regs.l; break;
         case 0x46: cpu->regs.b = read_byte(cpu, cpu->regs.hl); break;
 
         case 0x4f: cpu->regs.c = cpu->regs.a; break;
-        //case 0x48: cpu->regs.c = cpu->regs.b; break;
-        //case 0x49: cpu->regs.c = cpu->regs.c; break;
-        //case 0x4a: cpu->regs.c = cpu->regs.d; break;
-        //case 0x4b: cpu->regs.c = cpu->regs.e; break;
-        //case 0x4c: cpu->regs.c = cpu->regs.h; break;
-        //case 0x4d: cpu->regs.c = cpu->regs.l; break;
+        case 0x48: cpu->regs.c = cpu->regs.b; break;
+        case 0x49: cpu->regs.c = cpu->regs.c; break;
+        case 0x4a: cpu->regs.c = cpu->regs.d; break;
+        case 0x4b: cpu->regs.c = cpu->regs.e; break;
+        case 0x4c: cpu->regs.c = cpu->regs.h; break;
+        case 0x4d: cpu->regs.c = cpu->regs.l; break;
         case 0x4e: cpu->regs.c = read_byte(cpu, cpu->regs.hl); break;
 
-        //case 0x57: cpu->regs.d = cpu->regs.a; break;
-        //case 0x50: cpu->regs.d = cpu->regs.b; break;
-        //case 0x51: cpu->regs.d = cpu->regs.c; break;
-        //case 0x52: cpu->regs.d = cpu->regs.d; break;
-        //case 0x53: cpu->regs.d = cpu->regs.e; break;
+        case 0x57: cpu->regs.d = cpu->regs.a; break;
+        case 0x50: cpu->regs.d = cpu->regs.b; break;
+        case 0x51: cpu->regs.d = cpu->regs.c; break;
+        case 0x52: cpu->regs.d = cpu->regs.d; break;
+        case 0x53: cpu->regs.d = cpu->regs.e; break;
         case 0x54: cpu->regs.d = cpu->regs.h; break;
-        //case 0x55: cpu->regs.d = cpu->regs.l; break;
-        //case 0x56: cpu->regs.d = read_byte(cpu, cpu->regs.hl); break;
+        case 0x55: cpu->regs.d = cpu->regs.l; break;
+        case 0x56: cpu->regs.d = read_byte(cpu, cpu->regs.hl); break;
         
         case 0x5f: cpu->regs.e = cpu->regs.a; break;
-        //case 0x58: cpu->regs.e = cpu->regs.b; break;
-        //case 0x59: cpu->regs.e = cpu->regs.c; break;
-        //case 0x5a: cpu->regs.e = cpu->regs.d; break;
-        //case 0x5b: cpu->regs.e = cpu->regs.e; break;
-        //case 0x5c: cpu->regs.e = cpu->regs.h; break;
+        case 0x58: cpu->regs.e = cpu->regs.b; break;
+        case 0x59: cpu->regs.e = cpu->regs.c; break;
+        case 0x5a: cpu->regs.e = cpu->regs.d; break;
+        case 0x5b: cpu->regs.e = cpu->regs.e; break;
+        case 0x5c: cpu->regs.e = cpu->regs.h; break;
         case 0x5d: cpu->regs.e = cpu->regs.l; break;
         case 0x5e: cpu->regs.e = read_byte(cpu, cpu->regs.hl); break;
 
-        //case 0x67: cpu->regs.h = cpu->regs.a; break;
-        //case 0x60: cpu->regs.h = cpu->regs.b; break;
-        //case 0x61: cpu->regs.h = cpu->regs.c; break;
-        //case 0x62: cpu->regs.h = cpu->regs.d; break;
-        //case 0x63: cpu->regs.h = cpu->regs.e; break;
-        //case 0x64: cpu->regs.h = cpu->regs.h; break;
-        //case 0x65: cpu->regs.h = cpu->regs.l; break; 
+        case 0x67: cpu->regs.h = cpu->regs.a; break;
+        case 0x60: cpu->regs.h = cpu->regs.b; break;
+        case 0x61: cpu->regs.h = cpu->regs.c; break;
+        case 0x62: cpu->regs.h = cpu->regs.d; break;
+        case 0x63: cpu->regs.h = cpu->regs.e; break;
+        case 0x64: cpu->regs.h = cpu->regs.h; break;
+        case 0x65: cpu->regs.h = cpu->regs.l; break; 
         case 0x66: cpu->regs.h = read_byte(cpu, cpu->regs.hl); break;
 
         case 0x6f: cpu->regs.l = cpu->regs.a; break;
-        //case 0x68: cpu->regs.l = cpu->regs.b; break;
-        //case 0x69: cpu->regs.l = cpu->regs.c; break;
-        //case 0x6a: cpu->regs.l = cpu->regs.d; break;
-        //case 0x6b: cpu->regs.l = cpu->regs.e; break;
-        //case 0x6c: cpu->regs.l = cpu->regs.h; break;
-        //case 0x6d: cpu->regs.l = cpu->regs.l; break;
-        //case 0x6e: cpu->regs.l = read_byte(cpu, cpu->regs.hl); break;
+        case 0x68: cpu->regs.l = cpu->regs.b; break;
+        case 0x69: cpu->regs.l = cpu->regs.c; break;
+        case 0x6a: cpu->regs.l = cpu->regs.d; break;
+        case 0x6b: cpu->regs.l = cpu->regs.e; break;
+        case 0x6c: cpu->regs.l = cpu->regs.h; break;
+        case 0x6d: cpu->regs.l = cpu->regs.l; break;
+        case 0x6e: cpu->regs.l = read_byte(cpu, cpu->regs.hl); break;
         
         case 0x77: write_byte(cpu, cpu->regs.hl, cpu->regs.a); break;
-        //case 0x70: write_byte(cpu, cpu->regs.hl, cpu->regs.b); break;
-        //case 0x71: write_byte(cpu, cpu->regs.hl, cpu->regs.c); break;
-        //case 0x72: write_byte(cpu, cpu->regs.hl, cpu->regs.d); break;
-        //case 0x73: write_byte(cpu, cpu->regs.hl, cpu->regs.e); break;
-        //case 0x74: write_byte(cpu, cpu->regs.hl, cpu->regs.h); break;
-        //case 0x75: write_byte(cpu, cpu->regs.hl, cpu->regs.l); break;
-        //case 0x76: write_byte(cpu, cpu->regs.hl, read_byte(cpu, cpu->regs.hl)); break;
+        case 0x70: write_byte(cpu, cpu->regs.hl, cpu->regs.b); break;
+        case 0x71: write_byte(cpu, cpu->regs.hl, cpu->regs.c); break;
+        case 0x72: write_byte(cpu, cpu->regs.hl, cpu->regs.d); break;
+        case 0x73: write_byte(cpu, cpu->regs.hl, cpu->regs.e); break;
+        case 0x74: write_byte(cpu, cpu->regs.hl, cpu->regs.h); break;
+        case 0x75: write_byte(cpu, cpu->regs.hl, cpu->regs.l); break;
+        case 0x76: write_byte(cpu, cpu->regs.hl, read_byte(cpu, cpu->regs.hl)); break;
 
         // ADD
         case 0x87: add(cpu, cpu->regs.a, 0); break;
