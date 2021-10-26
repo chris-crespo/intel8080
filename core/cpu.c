@@ -387,7 +387,7 @@ void cpu_execute(CPU *cpu) {
         case 0x17: ral(cpu); break; // RAL
         case 0x1f: rar(cpu); break; // RAR
 
-        case 0x22: write_word(cpu, next_word(cpu), cpu->regs.hl); break; // SHLD 
+        case 0x22: write_word(cpu, next_word(cpu), cpu->regs.hl); break; // SHLD
         case 0x2a: cpu->regs.hl = read_word(cpu, next_word(cpu)); break; // LHLD
 
         // MOV
