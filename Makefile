@@ -3,7 +3,10 @@ common_deps = obj/cpu.o
 flags = -Wall -Wextra -Iinclude -g
 sdl = `sdl2-config --cflags --libs`
 
-.PHONY: all clean build test
+.PHONY: invaders test clean dirs
+
+invaders: dirs build/invaders
+	build/invaders
 
 test: dirs build/test
 	build/test
@@ -13,6 +16,12 @@ clean:
 
 dirs:
 	@mkdir -p obj/ build/
+
+build/invaders: obj/invaders.o obj/cpu.o
+	gcc $(flags) -o $@ obj/invaders.o obj/cpu.o
+
+obj/invaders.o: invaders/main.c
+	gcc $(flags) -c invaders/main.c -o $@
 
 build/test: obj/test.o obj/cpu.o 
 	gcc $(flags) -o $@ obj/test.o obj/cpu.o
