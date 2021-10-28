@@ -306,9 +306,7 @@ static inline void rst(CPU *cpu, u8 addr) {
     cpu->pc = addr;
 }
 
-void cpu_execute(CPU *cpu) {
-    // TODO: Change this
-    u8 opcode = next_byte(cpu);
+void cpu_execute(CPU *cpu, u8 opcode) {
     switch (opcode) {
         // NOP
         case 0x00: break;

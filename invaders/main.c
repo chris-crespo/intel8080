@@ -3,6 +3,7 @@
 #include <SDL.h>
 
 #include "cpu.h"
+#include "disassembler.h"
 #include "screen.h"
 
 static File *open_rom(void) {
@@ -76,6 +77,8 @@ int main(void) {
             last_tick = SDL_GetTicks();
         }
 
-        cpu_execute(&cpu);
+        u8 opcode = read_byte(&cpu, cpu.pc++);
+        disassemble_opcode(&cpu, opcode);
+        cpu_execute(&cpu, opcode);
     }
 }
