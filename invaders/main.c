@@ -78,7 +78,6 @@ int main(void) {
         }
 
         u8 opcode = read_byte(&cpu, cpu.pc++);
-        disassemble_opcode(&cpu, opcode);
         cpu_execute(&cpu, opcode);
     }
 }
