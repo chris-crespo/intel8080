@@ -18,7 +18,7 @@ void screen_init(void) {
 
     window = SDL_CreateWindow("Space Invaders",
             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-            SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN); 
+            SCREEN_HEIGHT, SCREEN_WIDTH, SDL_WINDOW_SHOWN); 
 
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
@@ -49,6 +49,20 @@ void screen_draw(u8 *memory) {
     }
     */
 
+    /**
+     * Memory:
+     *                  256 bits (32 bytes)
+     * (0,0)---------------------------------------------------(255,0)
+     *   |                                                         |        224 bits
+     * (0,223)-------------------------------------------------(255,223)
+     *
+     * Screen:
+     *                      224 pixels 
+     * (255,0)-----------------------------------------(255,223)
+     *     |                                               |                256 pixels
+     *   (0,0)-------------------------------------------(0,223)
+     */
+
     for (int row = 0; row < SCREEN_HEIGHT; row++) {
         for (int col = 0; col < SCREEN_WIDTH / 8; col++) {
             u8 byte = memory[row * 32 + col];
@@ -59,7 +73,7 @@ void screen_draw(u8 *memory) {
                 else 
                     SDL_SetRenderDrawColor(renderer, BLACK, 255);
 
-                SDL_RenderDrawPoint(renderer, col + k, row);
+                SDL_RenderDrawPoint(renderer, row, SCREEN_WIDTH - 1 - (col * 8 + k));
             }
         }
     }
