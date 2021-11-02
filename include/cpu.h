@@ -61,14 +61,15 @@ struct CPU {
     };
 
     bool interrupts_enabled;
+    u8 interrupt_vector;
 
     u8 *memory;
 
-    void (*in)(CPU *cpu); 
+    void (*in)(CPU *cpu, u8 port); 
     void (*out)(CPU *cpu, u8 port);
 };
 
-void cpu_init(CPU *cpu, void (*in)(CPU *cpu), void (*out)(CPU *cpu, u8 port));
+void cpu_init(CPU *cpu, void (*in)(CPU *cpu, u8 port), void (*out)(CPU *cpu, u8 port));
 void cpu_reset(CPU *cpu);
 void cpu_execute(CPU *cpu, u8 opcode);
 
