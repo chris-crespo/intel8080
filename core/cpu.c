@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include "cpu.h"
 
-void cpu_init(CPU *cpu, void (*in)(CPU*), void (*out)(CPU*, u8)) {
+void cpu_init(CPU *cpu, void (*in)(CPU*, u8), void (*out)(CPU*, u8)) {
     cpu->regs.a  = 0;
     cpu->regs.bc = 0;
     cpu->regs.de = 0;
@@ -17,6 +17,7 @@ void cpu_init(CPU *cpu, void (*in)(CPU*), void (*out)(CPU*, u8)) {
     cpu->sp = 0;
 
     cpu->interrupts_enabled = 0;
+    cpu->interrupt_vector = 0;
 
     cpu->memory = calloc(0x10000, sizeof(u8));
     if (!cpu->memory) {
@@ -29,7 +30,7 @@ void cpu_init(CPU *cpu, void (*in)(CPU*), void (*out)(CPU*, u8)) {
 }
 
 void cpu_reset(CPU *cpu) {
-    void (*in)(CPU*) = cpu->in;
+    void (*in)(CPU*, u8) = cpu->in;
     void (*out)(CPU*, u8) = cpu->out;
 
     free(cpu->memory);
@@ -301,9 +302,9 @@ static inline void xchg(CPU *cpu) {
     cpu->regs.hl = temp;
 }
 
-static inline void rst(CPU *cpu, u8 addr) {
+static inline void rst(CPU *cpu, u8 expr) {
     push(cpu, cpu->pc);
-    cpu->pc = addr;
+    cpu->pc = expr << 3;
 }
 
 void cpu_execute(CPU *cpu, u8 opcode) {
@@ -586,12 +587,18 @@ void cpu_execute(CPU *cpu, u8 opcode) {
         case 0xf4: call(cpu, !cpu->flags.sign); break;
         case 0xfc: call(cpu, cpu->flags.sign); break;
 
+        // IN
+        case 0xdb: cpu->in(cpu, next_byte(cpu)); break;
+
         // OUT
         case 0xd3: cpu->out(cpu, next_byte(cpu)); break;
 
         // XCHG
         case 0xeb: xchg(cpu); break;
         
+        // XTHL
+        case 0xe3: cpu->regs.hl = read_word(cpu, cpu->sp); break;
+
         // SPHL
         case 0xf9: cpu->sp = cpu->regs.hl; break;
 
@@ -609,10 +616,13 @@ void cpu_execute(CPU *cpu, u8 opcode) {
         case 0xbe: cmp(cpu, read_byte(cpu, cpu->regs.hl)); break;
         case 0xfe: cmp(cpu, next_byte(cpu)); break;
 
-        /// RST
+        // RST
+        case 0xcf: rst(cpu, 0x1); break;
+        case 0xd7: rst(cpu, 0x2); break;
         //case 0xff: rst(cpu, 0x38); break;
 
         // Undocumented opcodes
+        case 0x08: break;
         //case 0x18: break;
         //case 0x20: break;
         

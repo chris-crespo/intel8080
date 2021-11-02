@@ -295,12 +295,18 @@ void disassemble_opcode(CPU *cpu, u8 opcode) {
         case 0xf4: println("CP"); break;
         case 0xfc: println("CM"); break;
 
+        // IN
+        case 0xdb: println("IN"); break;
+
         // OUT
         case 0xd3: println("OUT"); break;
 
         // XCHG
         case 0xeb: println("XCHG"); break;
         
+        // XTHL
+        case 0xe3: println("XTHL"); break;
+
         // SPHL
         case 0xf9: println("SPHL"); break;
 
@@ -322,6 +328,7 @@ void disassemble_opcode(CPU *cpu, u8 opcode) {
         //case 0xff: rst(cpu, 0x38); break;
 
         // Undocumented opcodes
+        case 0x08: println("NOP"); break;
         //case 0x18: break;
         //case 0x20: break;
         
