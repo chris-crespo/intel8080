@@ -625,12 +625,19 @@ void cpu_execute(CPU *cpu, u8 opcode) {
         // RST
         case 0xcf: rst(cpu, 0x1); break;
         case 0xd7: rst(cpu, 0x2); break;
-        //case 0xff: rst(cpu, 0x38); break;
+        case 0xdf: rst(cpu, 0x3); break;
+        case 0xe7: rst(cpu, 0x4); break;
+        case 0xef: rst(cpu, 0x5); break;
+        case 0xe7: rst(cpu, 0x6); break;
+        case 0xff: rst(cpu, 0x7); break;
 
         // Undocumented opcodes
         case 0x08: break;
-        //case 0x18: break;
-        //case 0x20: break;
+        case 0x10: break;
+        case 0x18: break;
+        case 0x20: break;
+        case 0x28: break;
+        case 0x30: break;
         
         default: not_implemented(opcode);
     }
