@@ -4,8 +4,11 @@
 #include "types.h"
 #include "screen.h"
 
-#define SCREEN_WIDTH 256
-#define SCREEN_HEIGHT 224
+#define RASTER_WIDTH  256
+#define RASTER_HEIGHT 224
+
+#define SCREEN_WIDTH  RASTER_HEIGHT
+#define SCREEN_HEIGHT RASTER_WIDTH
 
 #define WHITE 0xf0, 0xf0, 0xf0
 #define BLACK 0x08, 0x08, 0x08
@@ -18,7 +21,7 @@ void screen_init(void) {
 
     window = SDL_CreateWindow("Space Invaders",
             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-            SCREEN_HEIGHT, SCREEN_WIDTH, SDL_WINDOW_SHOWN); 
+            SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN); 
 
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
@@ -80,6 +83,45 @@ void screen_draw(u8 *memory) {
 
     SDL_RenderPresent(renderer);
 }
+
+void screen_draw_bottom(u8 *memory) {
+    for (int row = 0; row < RASTER_WIDTH / 16; row++) {
+        for (int col = 0; col < RASTER_HEIGHT; col++) {
+            u8 byte = memory[col * 32 + row];
+            for (int k = 0; k < 8; k++) {
+                bool pixel = byte & (1 << k);
+                if (pixel) 
+                    SDL_SetRenderDrawColor(renderer, WHITE, 255);
+                else 
+                    SDL_SetRenderDrawColor(renderer, BLACK, 255);
+
+                SDL_RenderDrawPoint(renderer, col, SCREEN_HEIGHT - (row * 8 + k));
+            }
+        }
+    }
+
+    SDL_RenderPresent(renderer);
+}
+
+void screen_draw_top(u8 *memory) {
+    for (int row = RASTER_WIDTH / 16; row < RASTER_WIDTH / 8; row++) {
+        for (int col = 0; col < RASTER_HEIGHT; col++) {
+            u8 byte = memory[col * 32 + row];
+            for (int k = 0; k < 8; k++) {
+                bool pixel = byte & (1 << k);
+                if (pixel) 
+                    SDL_SetRenderDrawColor(renderer, WHITE, 255);
+                else 
+                    SDL_SetRenderDrawColor(renderer, BLACK, 255);
+
+                SDL_RenderDrawPoint(renderer, col, SCREEN_HEIGHT - (row * 8 + k));
+            }
+        }
+    }
+
+    SDL_RenderPresent(renderer);
+}
+
 
 void screen_quit(void) {
     SDL_DestroyRenderer(renderer);

@@ -3,8 +3,9 @@
 #include <SDL.h>
 
 #include "cpu.h"
-#include "disassembler.h"
 #include "screen.h"
+#include "input.h"
+#include "shift.h"
 
 static File *open_rom(void) {
     File *file = fopen("roms/invaders/invaders", "rb");
@@ -22,29 +23,48 @@ static void load_rom(u8 *memory) {
     fclose(rom);
 }
 
-static void in(CPU *cpu) {
-    fprintf(stderr, "Out not implemented.\n");
+static void in(CPU *cpu, u8 port) {
+    switch (port) {
+        case 1: {
+            cpu->regs.a = port1();
+            break;
+        }
+        case 2: {
+            cpu->regs.a = 0x0;
+            break;
+        }
+        case 3: {
+            cpu->regs.a = shift_read();
+            break;
+        }
+        default: {
+            fprintf(stderr, "Input port %d not handled.\n", port);
+            exit(1);
+        }
+    }
 }
 
 static void out(CPU *cpu, u8 port) {
     switch (port) {
+        case 2: {
+            shift_offset(cpu->regs.a & 0x07);
+            break;
+        }
         case 3: {
-            printf("Looks like this plays some sounds.\n");
-            printf("Input byte? %02x\n", cpu->regs.c);
+            break;
+        }
+        case 4: {
+            shift_write(cpu->regs.a);
             break;
         }
         case 5: {
-            printf("More sounds?\n");
-            printf("Is this the byte? %02x\n", cpu->regs.a);
             break;
         }
         case 6: {
-            printf("What's this for?\n");
-            printf("Input byte? %02x\n", cpu->regs.a);
-            break;
+            break; // Wathdog
         }
         default: {
-            fprintf(stderr, "Port %d not handled.\n", port);
+            fprintf(stderr, "Output port %d not handled.\n", port);
             exit(1);
         }
     }
@@ -55,8 +75,6 @@ static inline bool window_close(SDL_Event event) {
         && event.window.event == SDL_WINDOWEVENT_CLOSE;
 }
 
-static u32 last_tick = 0;
-
 int main(void) {
     CPU cpu;
 
@@ -64,6 +82,10 @@ int main(void) {
     load_rom(cpu.memory);
 
     screen_init();
+    keyboard_init();
+
+    bool bottom = true;
+    u32 last_tick = SDL_GetTicks();
 
     while (1) {
         SDL_Event event;
@@ -72,12 +94,28 @@ int main(void) {
                 screen_quit();
         }
 
-        if (SDL_GetTicks() - last_tick > 10) {
-            screen_draw(&cpu.memory[0x2400]);
+        u32 ticks_passed = SDL_GetTicks() - last_tick;
+        if (ticks_passed >= 8) {
+            if (bottom) {
+                screen_draw_bottom(&cpu.memory[0x2400]);
+                cpu.interrupt_vector = 0xcf;
+            }
+            else {
+                screen_draw_top(&cpu.memory[0x2400]);
+                cpu.interrupt_vector = 0xd7;
+            }
+
+            bottom = !bottom;
             last_tick = SDL_GetTicks();
         }
 
-        u8 opcode = read_byte(&cpu, cpu.pc++);
-        cpu_execute(&cpu, opcode);
+        if (cpu.interrupts_enabled && cpu.interrupt_vector) {
+            cpu_execute(&cpu, cpu.interrupt_vector);
+            cpu.interrupt_vector = 0;
+        }
+        else {
+            u8 opcode = read_byte(&cpu, cpu.pc++);
+            cpu_execute(&cpu, opcode);
+        }
     }
 }
