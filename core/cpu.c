@@ -302,6 +302,12 @@ static inline void xchg(CPU *cpu) {
     cpu->regs.hl = temp;
 }
 
+static inline void xthl(CPU *cpu) {
+    u16 tmp = cpu->sp;
+    cpu->sp = cpu->regs.hl;
+    cpu->regs.hl = tmp;
+}
+
 static inline void rst(CPU *cpu, u8 expr) {
     push(cpu, cpu->pc);
     cpu->pc = expr << 3;
@@ -597,7 +603,7 @@ void cpu_execute(CPU *cpu, u8 opcode) {
         case 0xeb: xchg(cpu); break;
         
         // XTHL
-        case 0xe3: cpu->regs.hl = read_word(cpu, cpu->sp); break;
+        case 0xe3: xthl(cpu); break;
 
         // SPHL
         case 0xf9: cpu->sp = cpu->regs.hl; break;
