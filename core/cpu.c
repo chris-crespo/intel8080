@@ -303,8 +303,8 @@ static inline void xchg(CPU *cpu) {
 }
 
 static inline void xthl(CPU *cpu) {
-    u16 tmp = cpu->sp;
-    cpu->sp = cpu->regs.hl;
+    u16 tmp = read_word(cpu, cpu->sp);
+    write_word(cpu, cpu->sp, cpu->regs.hl);
     cpu->regs.hl = tmp;
 }
 
@@ -628,7 +628,7 @@ void cpu_execute(CPU *cpu, u8 opcode) {
         case 0xdf: rst(cpu, 0x3); break;
         case 0xe7: rst(cpu, 0x4); break;
         case 0xef: rst(cpu, 0x5); break;
-        case 0xe7: rst(cpu, 0x6); break;
+        case 0xf7: rst(cpu, 0x6); break;
         case 0xff: rst(cpu, 0x7); break;
 
         // Undocumented opcodes
@@ -638,6 +638,10 @@ void cpu_execute(CPU *cpu, u8 opcode) {
         case 0x20: break;
         case 0x28: break;
         case 0x30: break;
+        case 0x38: break;
+
+        // Undocumented calls
+        case 0xdd: call(cpu, 1); break;
         
         default: not_implemented(opcode);
     }
