@@ -101,13 +101,15 @@ int main(void) {
     screen_init();
     keyboard_init();
 
-    SDL_AddTimer(8, issue_vector, &cpu);
+    SDL_TimerID timer_id = SDL_AddTimer(8, issue_vector, &cpu);
 
     while (1) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
-            if (window_close(event))
+            if (window_close(event)) {
+                SDL_RemoveTimer(timer_id);
                 screen_quit();
+            }
         }
 
         if (cpu.interrupts_enabled && cpu.interrupt_vector) {
