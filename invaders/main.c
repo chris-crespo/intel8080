@@ -80,7 +80,7 @@ u32 issue_vector(u32 interval, void *param) {
 
     CPU *cpu = (CPU *)param; 
     if (bottom) {
-        screen_draw(&cpu->memory[0x2400]);
+        screen_draw_bottom(&cpu->memory[0x2400]);
         cpu->interrupt_vector = 0xcf;
     }
     else {
