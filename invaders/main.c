@@ -75,6 +75,23 @@ static inline bool window_close(SDL_Event event) {
         && event.window.event == SDL_WINDOWEVENT_CLOSE;
 }
 
+u32 issue_vector(u32 interval, void *param) {
+    static bool bottom = false;
+
+    CPU *cpu = (CPU *)param; 
+    if (bottom) {
+        screen_draw(&cpu->memory[0x2400]);
+        cpu->interrupt_vector = 0xcf;
+    }
+    else {
+        screen_draw_top(&cpu->memory[0x2400]);
+        cpu->interrupt_vector = 0xd7;
+    }
+
+    bottom = !bottom;
+    return interval;
+}
+
 int main(void) {
     CPU cpu;
 
@@ -84,29 +101,13 @@ int main(void) {
     screen_init();
     keyboard_init();
 
-    bool bottom = true;
-    u32 last_tick = SDL_GetTicks();
+    SDL_AddTimer(8, issue_vector, &cpu);
 
     while (1) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             if (window_close(event))
                 screen_quit();
-        }
-
-        u32 ticks_passed = SDL_GetTicks() - last_tick;
-        if (ticks_passed >= 8) {
-            if (bottom) {
-                screen_draw_bottom(&cpu.memory[0x2400]);
-                cpu.interrupt_vector = 0xcf;
-            }
-            else {
-                screen_draw_top(&cpu.memory[0x2400]);
-                cpu.interrupt_vector = 0xd7;
-            }
-
-            bottom = !bottom;
-            last_tick = SDL_GetTicks();
         }
 
         if (cpu.interrupts_enabled && cpu.interrupt_vector) {
