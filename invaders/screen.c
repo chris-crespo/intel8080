@@ -66,9 +66,9 @@ void screen_draw(u8 *memory) {
      *   (0,0)-------------------------------------------(0,223)
      */
 
-    for (int row = 0; row < RASTER_WIDTH; row++) {
-        for (int col = 0; col < RASTER_HEIGHT ; col++) {
-            u8 byte = memory[col * 32 + row];
+    for (int row = 0; row < RASTER_HEIGHT; row++) {
+        for (int col = 0; col < RASTER_WIDTH / 8; col++) {
+            u8 byte = memory[row * 32 + col];
             for (int k = 0; k < 8; k++) {
                 bool pixel = byte & (1 << k);
                 if (pixel) 
@@ -76,7 +76,7 @@ void screen_draw(u8 *memory) {
                 else 
                     SDL_SetRenderDrawColor(renderer, BLACK, 255);
 
-                SDL_RenderDrawPoint(renderer, col, SCREEN_HEIGHT - 1 - (row * 8 + k));
+                SDL_RenderDrawPoint(renderer, row, SCREEN_HEIGHT - (col * 8 + k));
             }
         }
     }
