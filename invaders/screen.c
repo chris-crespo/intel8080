@@ -14,7 +14,7 @@
 #define BLACK 0x08, 0x08, 0x08
 
 static SDL_Window   *window;
-static SDL_Renderer *renderer;
+static SDL_Surface  *surface;
 
 void screen_init(void) {
     SDL_Init(SDL_INIT_EVENTS | SDL_INIT_TIMER);
@@ -23,35 +23,10 @@ void screen_init(void) {
             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
             SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN); 
 
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
-
-    screen_clear();
-}
-
-void screen_clear(void) {
-    SDL_SetRenderDrawColor(renderer, 0x08, 0x08, 0x08, 255);
-    SDL_RenderClear(renderer);
-    SDL_RenderPresent(renderer);
+    surface  = SDL_GetWindowSurface(window);
 }
 
 void screen_draw(u8 *memory) {
-    /**
-    for (int i = 0; i < 32; i++) {
-        for (int j = 0; j < 224; j++) {
-            u8 byte = memory[j * 32 + i];
-            for (int k = 0; k < 8; k++) {
-                bool pixel = byte & (1 << k);
-                if (pixel) 
-                    SDL_SetRenderDrawColor(renderer, WHITE, 255);
-                else 
-                    SDL_SetRenderDrawColor(renderer, BLACK, 255);
-
-                SDL_RenderDrawPoint(renderer, i + k, j);
-            }
-        }
-    }
-    */
-
     /**
      * Memory:
      *                  256 bits (32 bytes)
@@ -66,22 +41,27 @@ void screen_draw(u8 *memory) {
      *   (0,0)-------------------------------------------(0,223)
      */
 
+    // TODO: Cleanup code
     for (int row = 0; row < RASTER_HEIGHT; row++) {
         for (int col = 0; col < RASTER_WIDTH / 8; col++) {
             u8 byte = memory[row * 32 + col];
             for (int k = 0; k < 8; k++) {
                 bool pixel = byte & (1 << k);
-                if (pixel) 
-                    SDL_SetRenderDrawColor(renderer, WHITE, 255);
-                else 
-                    SDL_SetRenderDrawColor(renderer, BLACK, 255);
-
-                SDL_RenderDrawPoint(renderer, row, SCREEN_HEIGHT - (col * 8 + k));
+                SDL_LockSurface(surface);
+                int x = row;
+                int y = SCREEN_HEIGHT - (col * 8 + k) - 1;
+                u8 *pixels = (u8 *)surface->pixels;
+                u32 *drawing_pixel = (u32 *)(pixels + y * surface->pitch + x * 4);
+                if (pixel)
+                    *drawing_pixel = SDL_MapRGB(surface->format, WHITE);
+                else
+                    *drawing_pixel = SDL_MapRGB(surface->format, BLACK);
+                SDL_UnlockSurface(surface);
             }
         }
     }
 
-    SDL_RenderPresent(renderer);
+    SDL_UpdateWindowSurface(window);
 }
 
 void screen_draw_bottom(u8 *memory) {
@@ -90,17 +70,21 @@ void screen_draw_bottom(u8 *memory) {
             u8 byte = memory[col * 32 + row];
             for (int k = 0; k < 8; k++) {
                 bool pixel = byte & (1 << k);
-                if (pixel) 
-                    SDL_SetRenderDrawColor(renderer, WHITE, 255);
-                else 
-                    SDL_SetRenderDrawColor(renderer, BLACK, 255);
 
-                SDL_RenderDrawPoint(renderer, col, SCREEN_HEIGHT - (row * 8 + k));
+                SDL_LockSurface(surface);
+                int x = col;
+                int y = SCREEN_HEIGHT - (row * 8 + k) - 1;
+                u8 *pixels = (u8 *)surface->pixels;
+                u32 *drawing_pixel = (u32 *)(pixels + y * surface->pitch + x * 4);
+                if (pixel)
+                    *drawing_pixel = SDL_MapRGB(surface->format, WHITE);
+                else
+                    *drawing_pixel = SDL_MapRGB(surface->format, BLACK);
+                SDL_UnlockSurface(surface);
             }
         }
     }
-
-    SDL_RenderPresent(renderer);
+    SDL_UpdateWindowSurface(window);
 }
 
 void screen_draw_top(u8 *memory) {
@@ -109,22 +93,25 @@ void screen_draw_top(u8 *memory) {
             u8 byte = memory[col * 32 + row];
             for (int k = 0; k < 8; k++) {
                 bool pixel = byte & (1 << k);
-                if (pixel) 
-                    SDL_SetRenderDrawColor(renderer, WHITE, 255);
-                else 
-                    SDL_SetRenderDrawColor(renderer, BLACK, 255);
 
-                SDL_RenderDrawPoint(renderer, col, SCREEN_HEIGHT - (row * 8 + k));
+                SDL_LockSurface(surface);
+                int x = col;
+                int y = SCREEN_HEIGHT - (row * 8 + k) - 1;
+                u8 *pixels = (u8 *)surface->pixels;
+                u32 *drawing_pixel = (u32 *) (pixels + y * surface->pitch + x * 4);
+                if (pixel)
+                    *drawing_pixel = SDL_MapRGB(surface->format, WHITE);
+                else
+                    *drawing_pixel = SDL_MapRGB(surface->format, BLACK);
+                SDL_UnlockSurface(surface);
             }
         }
     }
 
-    SDL_RenderPresent(renderer);
+    SDL_UpdateWindowSurface(window);
 }
 
-
 void screen_quit(void) {
-    SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
 
