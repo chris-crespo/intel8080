@@ -63,6 +63,8 @@ struct CPU {
     bool interrupts_enabled;
     u8 interrupt_vector;
 
+    u64 cycles;
+
     u8 *memory;
 
     void (*in)(CPU *cpu, u8 port); 
