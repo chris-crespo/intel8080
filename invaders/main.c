@@ -96,7 +96,9 @@ u32 issue_vector(u32 interval, void *param) {
 
         count += cpu->cycles - cycles; 
 
-        if (cpu->cycles >= 33344 / 2) {
+        if (cpu->cycles >= 33344 / 2) { 
+            // TODO: Current approach causes the 0xcf interrupt to be issued twice
+            // before the other.
             cpu->cycles = 0;
             cpu->interrupt_vector = 0xcf;
         }
