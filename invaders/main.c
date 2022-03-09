@@ -61,7 +61,7 @@ static void out(CPU *cpu, u8 port) {
             break;
         }
         case 6: {
-            break; // Wathdog
+            break; // Watchdog
         }
         default: {
             fprintf(stderr, "Output port %d not handled.\n", port);
@@ -79,16 +79,32 @@ u32 issue_vector(u32 interval, void *param) {
     static bool bottom = false;
 
     CPU *cpu = (CPU *)param; 
-    if (bottom) {
-        screen_draw_bottom(&cpu->memory[0x2400]);
-        cpu->interrupt_vector = 0xcf;
-    }
-    else {
-        screen_draw_top(&cpu->memory[0x2400]);
-        cpu->interrupt_vector = 0xd7;
+
+    cpu->cycles = 0;
+    u64 count = 0;
+    while (count < 33333) { // 2MHz / 60s 
+        u64 cycles = cpu->cycles;
+
+        if (cpu->interrupts_enabled && cpu->interrupt_vector) {
+            cpu_execute(cpu, cpu->interrupt_vector);
+            cpu->interrupt_vector = 0;
+        }
+        else {
+            u8 opcode = read_byte(cpu, cpu->pc++);
+            cpu_execute(cpu, opcode);
+        }
+
+        count += cpu->cycles - cycles; 
+
+        if (cpu->cycles >= 33344 / 2) {
+            cpu->cycles = 0;
+            cpu->interrupt_vector = 0xcf;
+        }
     }
 
-    bottom = !bottom;
+    cpu->interrupt_vector = 0xd7;
+    screen_draw(&cpu->memory[0x2400]);
+
     return interval;
 }
 
@@ -101,7 +117,7 @@ int main(void) {
     screen_init();
     keyboard_init();
 
-    SDL_TimerID timer_id = SDL_AddTimer(8, issue_vector, &cpu);
+    SDL_TimerID timer_id = SDL_AddTimer(16, issue_vector, &cpu);
 
     while (1) {
         SDL_Event event;
@@ -112,13 +128,5 @@ int main(void) {
             }
         }
 
-        if (cpu.interrupts_enabled && cpu.interrupt_vector) {
-            cpu_execute(&cpu, cpu.interrupt_vector);
-            cpu.interrupt_vector = 0;
-        }
-        else {
-            u8 opcode = read_byte(&cpu, cpu.pc++);
-            cpu_execute(&cpu, opcode);
-        }
     }
 }

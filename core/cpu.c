@@ -1,6 +1,25 @@
 #include <stdlib.h>
 #include "cpu.h"
 
+static const u8 CYCLES[256] = {
+    4, 10,  7,  5,  5,  5,  7,  4,  4, 10,  7,  5,  5,  5, 7,  4,    
+    4, 10,  7,  5,  5,  5,  7,  4,  4, 10,  7,  5,  5,  5, 7,  4,    
+    4, 10, 16,  5,  5,  5,  7,  4,  4, 10, 16,  5,  5,  5, 7,  4,    
+    4, 10, 13,  5, 10, 10, 10,  4,  4, 10, 13,  5,  5,  5, 7,  4,    
+    5,  5,  5,  5,  5,  5,  7,  5,  5,  5,  5,  5,  5,  5, 7,  5,
+    5,  5,  5,  5,  5,  5,  7,  5,  5,  5,  5,  5,  5,  5, 7,  5,
+    5,  5,  5,  5,  5,  5,  7,  5,  5,  5,  5,  5,  5,  5, 7,  5,
+    7,  7,  7,  7,  7,  7,  7,  7,  5,  5,  5,  5,  5,  5, 7,  5,
+    4,  4,  4,  4,  4,  4,  7,  4,  4,  4,  4,  4,  4,  4, 7,  4,
+    4,  4,  4,  4,  4,  4,  7,  4,  4,  4,  4,  4,  4,  4, 7,  4,
+    4,  4,  4,  4,  4,  4,  7,  4,  4,  4,  4,  4,  4,  4, 7,  4,
+    4,  4,  4,  4,  4,  4,  7,  4,  4,  4,  4,  4,  4,  4, 7,  4,
+    5, 10, 10, 10, 11, 11,  7, 11,  5, 10, 10, 10, 11, 17, 7, 11,
+    5, 10, 10, 10, 11, 11,  7, 11,  5, 10, 10, 10, 11, 17, 7, 11,
+    5, 10, 10, 18, 11, 11,  7, 11,  5,  5, 10,  4, 11, 17, 7, 11,
+    5, 10, 10,  4, 11, 11,  7, 11,  5,  5, 10,  4, 11, 17, 7, 11
+};
+
 void cpu_init(CPU *cpu, void (*in)(CPU*, u8), void (*out)(CPU*, u8)) {
     cpu->regs.a  = 0;
     cpu->regs.bc = 0;
@@ -18,6 +37,8 @@ void cpu_init(CPU *cpu, void (*in)(CPU*, u8), void (*out)(CPU*, u8)) {
 
     cpu->interrupts_enabled = 0;
     cpu->interrupt_vector = 0;
+
+    cpu->cycles = 0;
 
     cpu->memory = calloc(0x10000, sizeof(u8));
     if (!cpu->memory) {
@@ -282,17 +303,29 @@ static inline void jmp(CPU *cpu, bool condition) {
         cpu->pc = addr;
 }
 
-static inline void ret(CPU *cpu, bool cond) {
+static inline void ret(CPU *cpu) {
+    cpu->pc = pop(cpu);
+}
+
+static inline void cond_ret(CPU *cpu, bool cond) {
     if (cond) {
-        cpu->pc = pop(cpu);
+        ret(cpu);
+        cpu->cycles += 6;
     }
 }
 
-static inline void call(CPU *cpu, bool cond) {
+static inline void call(CPU *cpu) {
+    u16 addr = next_word(cpu);
+    push(cpu, cpu->pc);
+    cpu->pc = addr;
+}
+
+static inline void cond_call(CPU *cpu, bool cond) {
     u16 addr = next_word(cpu);
     if (cond) {
         push(cpu, cpu->pc);
         cpu->pc = addr;
+        cpu->cycles += 6;
     }
 }
 
@@ -314,6 +347,7 @@ static inline void rst(CPU *cpu, u8 expr) {
 }
 
 void cpu_execute(CPU *cpu, u8 opcode) {
+    cpu->cycles += CYCLES[opcode];
     switch (opcode) {
         // NOP
         case 0x00: break;
@@ -572,26 +606,26 @@ void cpu_execute(CPU *cpu, u8 opcode) {
         case 0xfa: jmp(cpu, cpu->flags.sign); break;
 
         // RET
-        case 0xc9: ret(cpu, 1); break;
-        case 0xc0: ret(cpu, !cpu->flags.zero); break;
-        case 0xc8: ret(cpu, cpu->flags.zero); break;
-        case 0xd0: ret(cpu, !cpu->flags.carry); break;
-        case 0xd8: ret(cpu, cpu->flags.carry); break;
-        case 0xe0: ret(cpu, !cpu->flags.parity); break;
-        case 0xe8: ret(cpu, cpu->flags.parity); break;
-        case 0xf0: ret(cpu, !cpu->flags.sign); break;
-        case 0xf8: ret(cpu, cpu->flags.sign); break;
+        case 0xc9: ret(cpu); break;
+        case 0xc0: cond_ret(cpu, !cpu->flags.zero); break;
+        case 0xc8: cond_ret(cpu, cpu->flags.zero); break;
+        case 0xd0: cond_ret(cpu, !cpu->flags.carry); break;
+        case 0xd8: cond_ret(cpu, cpu->flags.carry); break;
+        case 0xe0: cond_ret(cpu, !cpu->flags.parity); break;
+        case 0xe8: cond_ret(cpu, cpu->flags.parity); break;
+        case 0xf0: cond_ret(cpu, !cpu->flags.sign); break;
+        case 0xf8: cond_ret(cpu, cpu->flags.sign); break;
 
         // CALL
-        case 0xcd: call(cpu, 1); break;
-        case 0xc4: call(cpu, !cpu->flags.zero); break;
-        case 0xcc: call(cpu, cpu->flags.zero); break;
-        case 0xd4: call(cpu, !cpu->flags.carry); break;
-        case 0xdc: call(cpu, cpu->flags.carry); break;
-        case 0xe4: call(cpu, !cpu->flags.parity); break;
-        case 0xec: call(cpu, cpu->flags.parity); break;
-        case 0xf4: call(cpu, !cpu->flags.sign); break;
-        case 0xfc: call(cpu, cpu->flags.sign); break;
+        case 0xcd: call(cpu); break;
+        case 0xc4: cond_call(cpu, !cpu->flags.zero); break;
+        case 0xcc: cond_call(cpu, cpu->flags.zero); break;
+        case 0xd4: cond_call(cpu, !cpu->flags.carry); break;
+        case 0xdc: cond_call(cpu, cpu->flags.carry); break;
+        case 0xe4: cond_call(cpu, !cpu->flags.parity); break;
+        case 0xec: cond_call(cpu, cpu->flags.parity); break;
+        case 0xf4: cond_call(cpu, !cpu->flags.sign); break;
+        case 0xfc: cond_call(cpu, cpu->flags.sign); break;
 
         // IN
         case 0xdb: cpu->in(cpu, next_byte(cpu)); break;
@@ -641,7 +675,7 @@ void cpu_execute(CPU *cpu, u8 opcode) {
         case 0x38: break;
 
         // Undocumented calls
-        case 0xdd: call(cpu, 1); break;
+        case 0xdd: call(cpu); break;
         
         default: not_implemented(opcode);
     }
