@@ -680,3 +680,13 @@ void cpu_execute(CPU *cpu, u8 opcode) {
         default: not_implemented(opcode);
     }
 }
+
+void cpu_step(CPU *cpu) {
+    if (cpu->interrupts_enabled && cpu->interrupt_vector) {
+        cpu_execute(cpu, cpu->interrupt_vector);
+        cpu->interrupt_vector = 0;
+    }
+    else {
+        cpu_execute(cpu, read_byte(cpu, cpu->pc++));
+    }
+}
