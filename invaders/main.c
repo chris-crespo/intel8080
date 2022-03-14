@@ -75,39 +75,23 @@ static inline bool window_close(SDL_Event event) {
         && event.window.event == SDL_WINDOWEVENT_CLOSE;
 }
 
-u32 issue_vector(u32 interval, void *param) {
-    static bool bottom = false;
+static void run_until_screen_interrupt(CPU *cpu, u8 interrupt) {
+    // Mid/End of Screen interrupt happens every half frame.
+    while (cpu->cycles < 16667) // (2MHz / 60s) / 2
+        cpu_step(cpu);
 
-    CPU *cpu = (CPU *)param; 
-
+    cpu_execute(cpu, interrupt);
     cpu->cycles = 0;
-    u64 count = 0;
-    while (count < 33333) { // 2MHz / 60s 
-        u64 cycles = cpu->cycles;
+}
 
-        if (cpu->interrupts_enabled && cpu->interrupt_vector) {
-            cpu_execute(cpu, cpu->interrupt_vector);
-            cpu->interrupt_vector = 0;
-        }
-        else {
-            u8 opcode = read_byte(cpu, cpu->pc++);
-            cpu_execute(cpu, opcode);
-        }
+static void run_frame(CPU *cpu) {
+    u32 start = SDL_GetTicks();
 
-        count += cpu->cycles - cycles; 
-
-        if (cpu->cycles >= 33344 / 2) { 
-            // TODO: Current approach causes the 0xcf interrupt to be issued twice
-            // before the other.
-            cpu->cycles = 0;
-            cpu->interrupt_vector = 0xcf;
-        }
-    }
-
-    cpu->interrupt_vector = 0xd7;
+    run_until_screen_interrupt(cpu, 0xcf);
+    run_until_screen_interrupt(cpu, 0xd7);
     screen_draw(&cpu->memory[0x2400]);
 
-    return interval;
+    while (SDL_GetTicks() - start < 17);
 }
 
 int main(void) {
@@ -119,16 +103,13 @@ int main(void) {
     screen_init();
     keyboard_init();
 
-    SDL_TimerID timer_id = SDL_AddTimer(16, issue_vector, &cpu);
-
     while (1) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
-            if (window_close(event)) {
-                SDL_RemoveTimer(timer_id);
+            if (window_close(event))
                 screen_quit();
-            }
         }
 
+        run_frame(&cpu);
     }
 }
